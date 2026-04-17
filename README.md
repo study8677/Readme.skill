@@ -8,36 +8,56 @@ Readme.skill 不是一个程序，而是一份给 AI agent 的指令集（即 [`
 
 1. 读取本机 `~/.claude/` 与 `~/.codex/` 的统计文件、SQLite、历史 JSONL
 2. 调用 `gh` 拉取你的 GitHub 公开贡献日历与 top 仓库
-3. 在你登记过的工作目录里跑只读 `git log`，统计本地提交
+3. 在你的工作目录里跑只读 `git log`，统计本地提交
 4. 计算 7 个维度（一览 / AI-Native / 协作风格 / 项目 / 主题 / 节奏 / 投入×产出）
 5. 默认匿名脱敏，输出 `output/profile_YYYYMMDD.md`
 
 整个过程**只读、不联网（除 `gh`）、不读对话正文**，可放心运行并对外分享结果。
 
-## 安装
+## 快速开始
 
-把这个 skill 放到 Claude Code / Codex 能识别的 skills 目录之一即可：
+### 方式一：Clone + 软链（推荐）
 
 ```bash
-# Claude Code
-ln -s "$(pwd)/SKILL.md" ~/.claude/skills/readme-skill/SKILL.md
+git clone https://github.com/study8677/Readme.skill.git
+cd Readme.skill
+
+# Claude Code 用户
 mkdir -p ~/.claude/skills/readme-skill
 ln -sf "$(pwd)/SKILL.md" ~/.claude/skills/readme-skill/SKILL.md
 
-# Codex CLI
+# Codex CLI 用户
 mkdir -p ~/.codex/skills/readme-skill
 ln -sf "$(pwd)/SKILL.md" ~/.codex/skills/readme-skill/SKILL.md
 ```
 
-或者直接复制：
+### 方式二：直接复制
 
 ```bash
-cp -r . ~/.claude/skills/readme-skill/
+git clone https://github.com/study8677/Readme.skill.git
+
+# Claude Code
+mkdir -p ~/.claude/skills/readme-skill
+cp Readme.skill/SKILL.md ~/.claude/skills/readme-skill/
+
+# Codex CLI
+mkdir -p ~/.codex/skills/readme-skill
+cp Readme.skill/SKILL.md ~/.codex/skills/readme-skill/
+```
+
+### 方式三：一行安装
+
+```bash
+# Claude Code
+mkdir -p ~/.claude/skills/readme-skill && curl -fsSL https://raw.githubusercontent.com/study8677/Readme.skill/main/SKILL.md -o ~/.claude/skills/readme-skill/SKILL.md
+
+# Codex CLI
+mkdir -p ~/.codex/skills/readme-skill && curl -fsSL https://raw.githubusercontent.com/study8677/Readme.skill/main/SKILL.md -o ~/.codex/skills/readme-skill/SKILL.md
 ```
 
 ## 使用
 
-在 Claude Code 或 Codex 的对话里说出以下任一句即可触发：
+安装后在 Claude Code 或 Codex 的对话里说出以下任一句即可触发：
 
 - "生成我的 AI 档案"
 - "做一份 AI-native README"
@@ -54,7 +74,7 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md`。
 
 ## 输出长什么样
 
-参考 [`examples/example_profile.md`](./examples/example_profile.md)。结构：
+参考 [`examples/example_profile.md`](./examples/example_profile.md)（虚构数据，仅展示格式）。结构：
 
 - 个人理念（来自 GitHub bio）
 - 一览（关键数字）
@@ -79,6 +99,8 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md`。
 | Codex 命令 | `~/.codex/history.jsonl` | prompt 文本采样 |
 | GitHub | `gh api graphql` | 365 天 contributions、top repos、语言 |
 | 本地 Git | 候选目录的 `git log` | commits / additions / deletions |
+
+> 缺少某个数据源？没关系。Skill 内置降级策略：没有 Codex SQLite 就跳过 Codex 章节，没有 `gh` 就跳过 GitHub 章节，报告照样生成。
 
 ## 隐私
 
