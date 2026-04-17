@@ -112,6 +112,30 @@ ls ~/.claude/tasks/  | wc -l        # tasks tracked
 ls ~/.claude/todos/  | wc -l
 ```
 
+### 2.4b Skill 清单（AI 基础设施采集）
+
+对每个 skill 目录，读取 `SKILL.md` 的 frontmatter（name + description）：
+
+```bash
+for d in ~/.claude/skills/*/; do
+  name=$(basename "$d")
+  desc=$(head -10 "$d"SKILL.md 2>/dev/null | grep -m1 'description:' | sed 's/.*description: *//')
+  echo "$name | $desc"
+done
+```
+
+同样处理 Codex skills：
+```bash
+for d in ~/.codex/skills/*/; do
+  name=$(basename "$d")
+  desc=$(head -10 "$d"SKILL.md 2>/dev/null | grep -m1 'description:' | sed 's/.*description: *//')
+  echo "$name | $desc"
+done
+```
+
+记录每个 skill 是「自建」还是「安装」。如果 skill 目录下有 git remote 指向用户自己的 repo，
+标记为自建；否则标记为安装。
+
 ### 2.5 配置深度
 
 Read `~/.claude/settings.json`. Count:
@@ -161,6 +185,22 @@ $SQ "SELECT first_user_message FROM threads WHERE first_user_message != '' \
 # CLI versions used (Codex evolution signal)
 $SQ "SELECT cli_version, COUNT(*) FROM threads WHERE cli_version != '' \
      GROUP BY 1 ORDER BY 2 DESC LIMIT 10;"
+
+# --- 以下为 v2.0 新增查询 ---
+
+# 月度聚合（Evolution 曲线用）
+$SQ "SELECT strftime('%Y-%m', datetime(created_at,'unixepoch')), COUNT(*), \
+     SUM(tokens_used), COALESCE(NULLIF(model,''),'unknown') \
+     FROM threads GROUP BY 1,4 ORDER BY 1,3 DESC;"
+
+# CLI 版本时间线（Evolution 曲线用）
+$SQ "SELECT cli_version, MIN(date(created_at,'unixepoch','localtime')), \
+     MAX(date(created_at,'unixepoch','localtime')), COUNT(*) \
+     FROM threads WHERE cli_version != '' GROUP BY 1 ORDER BY 2;"
+
+# 每项目 token 消耗（双工具编排分析用）
+$SQ "SELECT cwd, COALESCE(NULLIF(model,''),'unknown'), COUNT(*), SUM(tokens_used) \
+     FROM threads WHERE cwd != '' GROUP BY 1,2 ORDER BY 1,4 DESC;"
 ```
 
 ### 3.2 Codex 全局历史
@@ -274,6 +314,11 @@ Aggregate:
 - 总 sessions / 总消息 / 总 tokens (Claude) / 总 threads / 总 tokens (Codex)
 - 同期 GitHub: commits, PRs, issues, calendar_total
 - 本地 git: commits / +additions / −deletions / repos
+- **Velocity 指标**（v2.0 新增）:
+  - `commits_per_day = git_local_commits / active_days`
+  - `loc_churn_per_day = (additions + deletions) / active_days`
+  - `simultaneous_repos = count of repos with ≥1 commit`
+  - `cross_stack_langs = count of distinct primary languages across repos`
 
 ### 6.2 AI-Native 实践（核心章节）
 - **多模型编排**: 列出每个模型的 spent / cache_read tokens
@@ -281,18 +326,36 @@ Aggregate:
   自研 skills 数、hooks/MCP 数、plans/tasks 数、automations 数
 - **Prompt caching 熟练度**: cache_to_spent_ratio
 - **Reasoning effort 分布**: xhigh/high/medium/low 占比
+- **AI 基础设施层**（v2.0 新增 —— 这是最 AI-native 的信号）:
+  列出用户亲手构建的 skills / hooks / automations / rules，每项给
+  `名称 | 一句话描述 | 调用次数（如可从 history 统计）`。
+  区分「自建」（用户原创）与「安装」（第三方）。
+  这一段的叙事重点：**不只是 AI 的使用者，更是 AI 工作流的建设者**。
 
 ### 6.3 协作风格
 - Top 10 slash commands (cmd, count, 简短解读)
 - Plan-to-direct ratio = `/plan count / non-command prompt count`
 - 平均消息/session = `totalMessages / totalSessions`
 - 最长 session: 时长(小时) + 消息数
+- **Session 架构**（v2.0 新增）:
+  从 history.jsonl 中按 sessionId 分组，统计典型 session 内的命令序列模式：
+  - 以 `/plan` 开头的 session 占比 → 说明「先想再做」的习惯有多强
+  - session 内使用 `/compact` 或 `/clear` 的比例 → 上下文管理意识
+  - `/effort` 在 session 内的切换频率 → 是否按阶段调节推理深度
+  - `/resume` 使用率 = resume_count / totalSessions → session 连续性
+  用 2-3 句话总结出用户的 **session 驾驭模式**（例如：
+  「典型流程：/plan 规划 → 迭代 → /compact 回收上下文 → 继续交付」）
 
 ### 6.4 项目与领域
 - 合并维度: each project key (real_cwd) accumulates
   `sessions`(claude) + `codex_threads` + `git_commits` + `git_lines`
 - 综合分数 = `sessions*5 + codex_threads*4 + git_commits`
 - 排序取 Top 12，匿名化为 "项目 A/B/C..."（按分数顺序）
+- **双工具编排模式**（v2.0 新增）：对每个 Top 12 项目，计算：
+  - `claude_ratio = claude_sessions / (claude_sessions + codex_threads)`
+  - 分类为：**Claude 主导**（ratio > 0.7）/ **Codex 主导**（ratio < 0.3）/ **双引擎**（0.3~0.7）
+  - 在项目表中新增「编排模式」列
+  - 汇总：双引擎项目数 / Claude 主导数 / Codex 主导数
 - 用以下规则给每个项目打**领域标签**（命中第一条即停）：
 
 | 领域 | 关键词（小写匹配 cwd basename + 标题） |
@@ -333,15 +396,60 @@ make, get, just, also, will, would, can.
 - **峰值日**: max 的 dailyActivity.messageCount
 - **首次/最近**: min/max date
 
-### 6.7 投入 × 产出（核心章节）
-- 每模型 spent / cache_read 表
-- 每日 token 消耗趋势（用 `dailyModelTokens` 求和；可绘 ASCII 曲线）
-- GitHub 1 年贡献日历（求 calendar_total，列出 top 10 高产日）
+### 6.7 投入 × 产出
+- 每模型 spent / cache_read 表（**降级展示**：放在折叠区或尾部，不再作为核心亮点）
+- GitHub 1 年贡献日历（求 calendar_total，列出 top 5 高产日）
 - Top GitHub 仓库（commits 排序；private 仓库改名为 "Private Repo X"）
 - 主要语言：merge `gh languages.bytes` 与本地 `git numstat ext` 排序
-- **单位投入产出**:
+- **产出密度**（v2.0 重点，替代原来的 tokens_per_commit）:
+  - `commits_per_day = git_local_commits / active_days`
+  - `loc_churn_per_day = (additions + deletions) / active_days`
+  - `github_contribs_per_active_day = calendar_total / active_days`
+  - 贡献爆发日：连续 3+ 天 daily_contributions > 20 的窗口
+- 单位投入产出（保留但标注为「参考」，不放显眼位置）:
   - `tokens_per_commit = claude_tokens_spent / git_local_commits`
   - `tokens_per_loc    = claude_tokens_spent / (additions + deletions)`
+
+### 6.8 Velocity & Leverage（v2.0 新增 —— AI 让你快了多少、广了多少）
+
+这一维度的目的是回答：**如果没有 AI 协作，这种产出可能吗？**
+
+计算并叙述：
+- **日均产出**: commits/day, LOC churn/day, GitHub contributions/day
+- **跨栈广度**: 同时活跃的仓库数 × 使用的编程语言数。
+  一个人用 Python + TypeScript + Rust + Go + Shell 跨 13 个仓库日均 10 commit，
+  这种广度只有 AI 辅助才现实。
+- **同时在线项目数**: 活跃天数 >= 3 的项目数量
+- **开源影响力**: 总 stars × repos with stars > 0 → 产出不只是 "量"，还被社区认可
+- 用 1-2 句总结性叙事，例如：
+  「AI 让一个人拥有了小团队的交付能力：13 个仓库、5 门语言、日均 10 commit。」
+
+### 6.9 Evolution 曲线（v2.0 新增 —— 你的 AI 用法在进化）
+
+目的：把静态快照变成成长叙事。让读者看到 **AI 使用的成熟度曲线**。
+
+数据来源：
+- Codex `threads` 的 `created_at` + `model` + `cli_version`
+- Claude `history.jsonl` 的 `timestamp` + `display`（斜杠命令）
+- Claude `projects/` 目录的 JSONL 文件创建时间
+
+计算：
+1. **月度活跃量**：每月 Claude sessions + Codex threads
+2. **能力解锁时间线**（从 history.jsonl 提取各能力的首次使用日期）：
+   - 首次 `/plan` 的日期 → Plan-mode 解锁
+   - 首次 `/effort` 的日期 → Reasoning effort 解锁
+   - 首次 `/skill-creator` 或自研 skill 出现的日期 → Skill 自建解锁
+   - 首次 `/vibe-forge` 或 `/ssh-prod` 的日期 → 自建 skill 投入生产
+   - Codex CLI 版本跳跃点（major version changes）
+3. **模型迁移**：从 Codex 月度模型聚合中，标出何时从旧模型迁移到新模型
+
+渲染为 timeline 格式：
+```
+2026-01  Codex 起步，纯 prompt，CLI 0.81.0-alpha
+2026-02  开始日常化，tokens 增长
+2026-03  Claude Code 加入 → plan-mode + effort 调节 → 开始自建 skills
+2026-04  双工具编排成熟，skills 生态完善，日均 10 commit
+```
 
 ---
 
@@ -377,7 +485,8 @@ If user said "show real names" / "私人版":
 ## Step 8 — 渲染最终 Markdown
 
 Write to `output/profile_<YYYYMMDD>.md` using **exactly** this structure
-(中文叙事 + 表格；技术词保留英文；体感舒服优先于堆数据)：
+(中文叙事 + 表格；技术词保留英文；**讲故事优先于堆数据**；
+展示「因为 AI 而不同」，而不仅仅是「用了很多 AI」)：
 
 ```markdown
 # <name or github_login> · AI-Native Developer Profile
@@ -389,135 +498,163 @@ Write to `output/profile_<YYYYMMDD>.md` using **exactly** this structure
 ## 一览
 
 - 在 **<span_days>** 天里完成 **<claude_sessions>** 次 Claude sessions + **<codex_threads>** 次 Codex threads，共 **<total_messages>** 条消息
-- Claude 上花费 **<claude_tokens_spent>** tokens，复用 **<cache_read>** tokens（cache 比 = **<ratio>**×）
-- Codex 上消耗 **<codex_tokens>** tokens
-- 同期 GitHub 产出：**<github_commits>** commits / **<github_prs>** PRs / **<github_issues>** issues / **<repo_contribs>** repos
-- 本地 Git：**<git_commits>** commits across **<git_repos>** 仓库（+<additions> / -<deletions>）
+- 日均产出：**<commits_per_day>** commits / **<loc_churn_per_day>** 行代码变动 / **<github_contribs_per_day>** GitHub contributions
+- 同时维护 **<git_repos>** 个仓库，横跨 **<cross_stack_langs>** 门语言
+- 同期 GitHub：**<github_commits>** commits / **<github_prs>** PRs / **<github_issues>** issues / **<calendar_total>** 总贡献
 - 主力工具：Claude Code (Opus 4.6 + Sonnet 4.6) + Codex CLI (GPT-5.4)
+
+## 🚀 Velocity & Leverage — AI 让一个人拥有了小团队的交付能力
+
+> <1-2 句叙事，例如：「13 个仓库、5 门语言、日均 10 commit —— 这种跨栈广度和交付密度，只有 AI 协作才现实。」>
+
+| 指标 | 数值 | 说明 |
+| --- | ---: | --- |
+| 日均 commits | <n> | 本地 git commits / 活跃天数 |
+| 日均代码变动 | <n> 行 | (additions + deletions) / 活跃天数 |
+| 同时维护仓库 | <n> 个 | 过去一年有 commit 的仓库数 |
+| 跨栈语言 | <n> 门 | Python / TypeScript / Rust / Go / … |
+| GitHub 贡献爆发 | <dates> | 连续 3+ 天 daily > 20 的窗口 |
+| 开源影响力 | <total_stars> stars | 跨 <n> 个被 star 的仓库 |
 
 ## 🤖 AI-Native 实践
 
-> 我把 AI 真正纳入了日常开发流程。这不是"偶尔用 ChatGPT 问问"，是把多 LLM 编排、planning、structured workflows 都跑通。
+> 不是「偶尔问问 AI」，是把多 LLM 编排、planning、structured workflows 都跑通。
 
 ### 多模型编排
 | 模型 | sessions / threads | spent tokens | cache-read | 用途倾向 |
-| --- | --- | --- | --- | --- |
+| --- | ---: | ---: | ---: | --- |
 | Claude Opus 4.6 | … | … | … | 深度推理、复杂规划 |
 | Claude Sonnet 4.6 | … | … | … | 快速迭代、批量任务 |
 | GPT-5.4 (Codex) | … | … | — | 第二意见、跨工具诊断 |
-| GPT-5.4-mini | … | … | — | 轻量任务 |
+| … | | | | |
 
 ### 高级能力深度使用
-- **Plan-mode**: 启用 **<n>** 次 — 复杂任务先想清楚再动手
-- **Effort 调节**: **<n>** 次 — 按任务难度切换推理深度
-- **Skill 调用**: **<n>** 次；自研/安装 skills **<n+m>** 个 (Claude <n> + Codex <m>)
-- **Plans 文档**: **<n>** 份结构化计划；Tasks 跟踪 **<n>** 个
-- **Hooks**: **<n>** 个；MCP servers: **<n>** 个；Codex automations: **<n>** 个
+- **Plan-mode**: **<n>** 次
+- **Effort 调节**: **<n>** 次
+- **Skills**: 共 **<n>** 个（Claude <n> + Codex <m>）
+- **Plans**: **<n>** 份；Tasks: **<n>** 个
+- **Hooks**: **<n>** 个；Automations: **<n>** 个
 
 ### Prompt caching 熟练度
-每花费 1 个新 token，平均复用 **<ratio>** 个缓存 token —— 反映对长上下文 + 重复结构的优化能力。
+每花费 1 个新 token，复用 **<ratio>** 个缓存 token（cache-read 占总 IO 的 **<%>**）。
 
 ### Reasoning effort 偏好
 xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
+
+## 🔧 AI 基础设施 — 不只用 AI，还在给 AI 造工具
+
+> <1 句叙事：「从 skill 到 hook 到 automation，我在构建让 AI 更好地帮我工作的基础设施。」>
+
+### 自建 Skills
+| 名称 | 描述 | 调用次数 | 工具 |
+| --- | --- | ---: | --- |
+| <skill_name> | <一句话> | <n> | Claude / Codex |
+| … | | | |
+
+### 安装的 Skills
+| 名称 | 描述 | 工具 |
+| --- | --- | --- |
+| … | | |
+
+### 其他基础设施
+- Hooks: <列出>
+- Codex automations: <列出>
+- Codex rules: <列出>
 
 ## 🛠️ AI 协作风格
 
 ### 最常用的 slash 命令 Top 10
 | # | 命令 | 次数 | 含义 |
-| --- | --- | --- | --- |
-| 1 | /effort | 506 | 切换推理深度（max/high/medium） |
+| --- | --- | ---: | --- |
+| 1 | /effort | <n> | 切换推理深度 |
 | 2 | … | … | … |
 
-### 节奏特征
-- **Plan→Direct 比例**: 每 100 条直接对话中有 **<n>** 次 plan-mode（先想再做）
-- **平均会话深度**: 每个 session **<n>** 条消息
-- **最长 session**: **<hours>** 小时 / **<msgs>** 条消息（深度协作）
+### Session 架构
+<2-3 句描述用户的 session 驾驭模式，例如：>
+- 典型流程：`/plan` 规划 → 深度迭代 → `/compact` 回收上下文 → 继续交付
+- **<n>%** 的 session 以 `/plan` 开头（先想再做）
+- **<n>%** 的 session 使用过 `/compact` 或 `/clear`（主动管理上下文）
+- `/resume` 恢复率: **<n>%**（session 连续性）
+- 平均会话深度: **<n>** 条消息 / session
+- 最长 session: **<hours>** 小时 / **<msgs>** 条消息
 
 ## 📂 项目与领域分布
 
 跨 **<n>** 个项目活跃，按领域分布：
 
 | 领域 | 项目数 |
-| --- | --- |
-| 基础设施 / 部署 | … |
-| 产品 / 业务后端 | … |
-| ML / 研究 / 论文 | … |
-| AI 工具 / Skill | … |
-| 数据 / 分析 | … |
-| 文档 / Markdown | … |
+| --- | ---: |
+| … | … |
 
 ### Top 项目（脱敏）
-| 项目 | Claude sessions | Codex threads | Git commits | 领域 |
-| --- | --- | --- | --- | --- |
-| 项目 A | 95 | 47 | 188 | 基础设施 / 部署 |
-| 项目 B | 42 | 46 | 274 | 其他 |
-| … | | | | |
+| 项目 | Claude | Codex | Git commits | 编排模式 | 领域 |
+| --- | ---: | ---: | ---: | --- | --- |
+| 项目 A | <n> | <n> | <n> | 双引擎 | … |
+| 项目 B | <n> | <n> | <n> | Codex 主导 | … |
+| … | | | | | |
+
+编排模式统计：双引擎 **<n>** 个 · Claude 主导 **<n>** 个 · Codex 主导 **<n>** 个
+
+## 🧬 Evolution 曲线 — AI 用法在进化
+
+```
+<YYYY-MM>  <里程碑事件>
+<YYYY-MM>  <里程碑事件>
+<YYYY-MM>  <里程碑事件>
+<YYYY-MM>  <里程碑事件>
+```
+
+月度活跃趋势：
+| 月份 | Claude sessions | Codex threads | 里程碑 |
+| --- | ---: | ---: | --- |
+| … | | | |
 
 ## 💡 兴趣主题 & 关键词
 
-从我的 plan 标题、Codex thread 标题、prompt 文本中自动提取的高频主题：
-
-> **<tag1>** · <tag2> · <tag3> · <tag4> · <tag5> ·  …
-
-（说明：用 2-char 滑窗对中文采样、英文 stem 化后做频次统计；已过滤停用词与明显碎片）
+> **<tag1>** · <tag2> · <tag3> · … （top 25，已过滤停用词）
 
 ## ⏱️ 工作节奏
 
 ### 24 小时活跃热力图
 ```
-00 ▎  12
-01 █  32
-02 ███▌  85
-03 ████████████▌  367
-04 ███████  199
-05 ███████████▎  339
-06 ████████████  350
-07 █████████████  379
+00 …
+01 …
 …
 ```
-（峰值时段 **<H1>~<H2>** 时；说明深度工作落在该窗口）
+（峰值时段 / 活跃模式描述）
 
 ### 时间跨度
-- 首次活跃: **<first>**
-- 最近活跃: **<last>**
-- 活跃天数: **<active_days>**
-- 最长连续活跃: **<streak>** 天
-- 单日峰值: **<peak_date>**, **<peak_msgs>** 条消息
+- 首次 / 最近活跃: …
+- 活跃天数 / 最长连续 / 单日峰值: …
 
-## 💰 AI 投入 × 产出
-
-### 每模型 token 总账
-| 模型 | spent (新付费) | cache-read (复用) |
-| --- | --- | --- |
-| Claude Opus 4.6 | … | … |
-| Claude Sonnet 4.6 | … | … |
-| GPT-5.4 | … | — |
-| … | | |
+## 💰 产出 & 投入
 
 ### GitHub 同期产出
-- 365 天总贡献: **<calendar_total>**（其中 commits **<n>** / PRs **<n>** / issues **<n>**）
-- 拥有仓库总数: **<owned_repos>**
+- 365 天总贡献: **<n>** · 拥有仓库: **<n>**
+- 最高产单日: <top 5 dates>
 
-#### Top 仓库（窗口内 commits）
-| 仓库 | language | commits | private |
-| --- | --- | --- | --- |
-| <user>/OpenCMO | Python | 274 | no |
-| Private Repo X | TypeScript | 37 | yes |
+#### Top 仓库
+| 仓库 | language | commits | stars |
+| --- | --- | ---: | ---: |
 | … | | | |
 
-### 主要语言（GitHub bytes + 本地 git LOC 合并）
-JavaScript / TypeScript · Python · Rust · Go · …
+### 主要语言
+<语言列表>
 
-### 单位投入产出（粗略估算）
-- 每个本地 commit ≈ **<n>** tokens
-- 每行代码（add+del）≈ **<n>** tokens
+### 每模型 token 参考
+<token 表 —— 放在末尾，降低权重>
+
+### 单位投入产出（参考）
+- 每 commit ≈ **<n>** Claude tokens
+- 每行代码 ≈ **<n>** Claude tokens
+> 提醒：AI 产出还包含大量不直接转化为 commit 的高价值劳动。
 
 ## 📊 数据来源 & 隐私承诺
 
-- 数据 100% 本地：`~/.claude/*` + `~/.codex/*` + 本地 `git log` + GitHub via `gh` (只查询)
-- **未读取任何对话正文**，只用统计字段、计划 / thread 标题、首条用户消息
-- 项目名、文件路径已匿名（项目 A/B/C…），API key / token / 邮箱 已正则清洗
-- 报告由 Claude Code 按本 skill 自动生成，可重复运行
+- 数据 100% 本地：`~/.claude/*` + `~/.codex/*` + 本地 `git log` + GitHub via `gh`
+- **未读取任何对话正文**
+- 项目名已匿名，API key / token / 邮箱 已正则清洗
+- 报告由 Claude Code / Codex 按 Readme.skill 自动生成，可重复运行
 - 生成时间: **<ISO timestamp>**
 ```
 

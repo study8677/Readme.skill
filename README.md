@@ -77,13 +77,16 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md`。
 参考 [`examples/example_profile.md`](./examples/example_profile.md)（虚构数据，仅展示格式）。结构：
 
 - 个人理念（来自 GitHub bio）
-- 一览（关键数字）
+- 一览（关键数字 + velocity 指标）
+- 🚀 Velocity & Leverage — AI 让你快了多少、广了多少（v2.0 新增）
 - 🤖 AI-Native 实践（多模型编排、高级能力、prompt caching、reasoning effort）
-- 🛠️ AI 协作风格（top slash 命令、plan-mode 比例、最长 session）
-- 📂 项目与领域分布（脱敏表 + 领域桶）
+- 🔧 AI 基础设施 — 你造了什么工具给 AI 用（v2.0 新增）
+- 🛠️ AI 协作风格（slash 命令 + Session 架构分析）
+- 📂 项目与领域分布（脱敏表 + 双工具编排模式）
+- 🧬 Evolution 曲线 — AI 用法的成长弧线（v2.0 新增）
 - 💡 兴趣主题 & 关键词
 - ⏱️ 工作节奏（24h 热力图、连续活跃、峰值日）
-- 💰 AI 投入 × 产出（每模型 token、GitHub 贡献、Top 仓库、语言分布）
+- 💰 产出 & 投入（GitHub 贡献优先，token 表降级到参考）
 - 📊 数据来源 & 隐私承诺
 
 ## 数据来源
