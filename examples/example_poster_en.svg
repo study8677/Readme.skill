@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920"
+     font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0a1f"/>
+      <stop offset="50%" stop-color="#1a1442"/>
+      <stop offset="100%" stop-color="#0d2e1f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="cardbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="white" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+
+  <g opacity="0.06" fill="white">
+    <circle cx="60" cy="60" r="2"/>
+    <circle cx="180" cy="60" r="2"/>
+    <circle cx="300" cy="60" r="2"/>
+    <circle cx="420" cy="60" r="2"/>
+    <circle cx="540" cy="60" r="2"/>
+    <circle cx="660" cy="60" r="2"/>
+    <circle cx="780" cy="60" r="2"/>
+    <circle cx="900" cy="60" r="2"/>
+    <circle cx="1020" cy="60" r="2"/>
+  </g>
+
+  <rect x="60" y="120" width="120" height="6" fill="url(#accent)"/>
+
+  <text x="60" y="200" font-size="28" font-weight="500" fill="white" fill-opacity="0.5" letter-spacing="6">
+    AI-NATIVE DEVELOPER PROFILE
+  </text>
+  <text x="60" y="290" font-size="56" font-weight="700" fill="white">
+    118 Days · Two-Engine · One-Person Team
+  </text>
+  <text x="60" y="345" font-size="26" font-weight="400" fill="white" fill-opacity="0.55">
+    Demo Profile · 2026-01-01 → 2026-04-28 · v2.4
+  </text>
+
+  <!-- 6 hero metric cards (2 cols × 3 rows) -->
+  <g transform="translate(60, 440)">
+    <g>
+      <rect x="0" y="0" width="465" height="220" rx="20" fill="url(#cardbg)" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+      <text x="232" y="125" text-anchor="middle" font-size="120" font-weight="800" fill="white">118</text>
+      <text x="232" y="175" text-anchor="middle" font-size="20" fill="white" fill-opacity="0.5" letter-spacing="3">DAYS · 80 ACTIVE</text>
+    </g>
+    <g transform="translate(495, 0)">
+      <rect x="0" y="0" width="465" height="220" rx="20" fill="url(#cardbg)" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+      <text x="232" y="125" text-anchor="middle" font-size="120" font-weight="800" fill="white">761</text>
+      <text x="232" y="175" text-anchor="middle" font-size="20" fill="white" fill-opacity="0.5" letter-spacing="3">LOCAL COMMITS</text>
+    </g>
+
+    <g transform="translate(0, 240)">
+      <rect x="0" y="0" width="465" height="220" rx="20" fill="url(#cardbg)" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+      <text x="232" y="125" text-anchor="middle" font-size="100" font-weight="800" fill="url(#accent)">12.9B</text>
+      <text x="232" y="175" text-anchor="middle" font-size="20" fill="white" fill-opacity="0.5" letter-spacing="3">TOKENS THROUGH</text>
+    </g>
+    <g transform="translate(495, 240)">
+      <rect x="0" y="0" width="465" height="220" rx="20" fill="url(#cardbg)" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+      <text x="232" y="125" text-anchor="middle" font-size="100" font-weight="800" fill="url(#accent)">1 : 23</text>
+      <text x="232" y="175" text-anchor="middle" font-size="20" fill="white" fill-opacity="0.5" letter-spacing="3">CACHE LEVERAGE</text>
+    </g>
+
+    <g transform="translate(0, 480)">
+      <rect x="0" y="0" width="465" height="220" rx="20" fill="url(#cardbg)" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+      <text x="232" y="125" text-anchor="middle" font-size="100" font-weight="800" fill="white">1,361</text>
+      <text x="232" y="175" text-anchor="middle" font-size="20" fill="white" fill-opacity="0.5" letter-spacing="3">GITHUB STARS</text>
+    </g>
+    <g transform="translate(495, 480)">
+      <rect x="0" y="0" width="465" height="220" rx="20" fill="url(#cardbg)" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+      <text x="232" y="125" text-anchor="middle" font-size="100" font-weight="800" fill="white">11 · 6</text>
+      <text x="232" y="175" text-anchor="middle" font-size="20" fill="white" fill-opacity="0.5" letter-spacing="3">REPOS · LANGS</text>
+    </g>
+  </g>
+
+  <!-- Evolution timeline -->
+  <g transform="translate(60, 1240)">
+    <text x="0" y="0" font-size="24" font-weight="600" fill="white" fill-opacity="0.7" letter-spacing="3">EVOLUTION</text>
+
+    <line x1="60" y1="80" x2="900" y2="80" stroke="url(#accent)" stroke-width="3"/>
+
+    <g transform="translate(60, 80)">
+      <circle r="14" fill="white"/>
+      <text y="60" text-anchor="middle" font-size="22" fill="white" font-weight="700">2026-01</text>
+      <text y="92" text-anchor="middle" font-size="18" fill="white" fill-opacity="0.55">Codex starts</text>
+    </g>
+    <g transform="translate(340, 80)">
+      <circle r="14" fill="white"/>
+      <text y="60" text-anchor="middle" font-size="22" fill="white" font-weight="700">2026-02</text>
+      <text y="92" text-anchor="middle" font-size="18" fill="white" fill-opacity="0.55">Tokens up 6×</text>
+    </g>
+    <g transform="translate(620, 80)">
+      <circle r="14" fill="white"/>
+      <text y="60" text-anchor="middle" font-size="22" fill="white" font-weight="700">2026-03</text>
+      <text y="92" text-anchor="middle" font-size="18" fill="white" fill-opacity="0.55">Claude joins</text>
+    </g>
+    <g transform="translate(900, 80)">
+      <circle r="14" fill="white"/>
+      <text y="60" text-anchor="middle" font-size="22" fill="white" font-weight="700">2026-04</text>
+      <text y="92" text-anchor="middle" font-size="18" fill="white" fill-opacity="0.55">Two-engine peak</text>
+    </g>
+  </g>
+
+  <!-- Side info card -->
+  <g transform="translate(60, 1500)">
+    <rect x="0" y="0" width="960" height="220" rx="20" fill="url(#cardbg)" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+
+    <text x="40" y="50" font-size="18" fill="white" fill-opacity="0.5" letter-spacing="2">CACHE LEVERAGE RANK</text>
+    <text x="40" y="100" font-size="28" fill="white" font-weight="600">Opus 4.7-1M · 36×</text>
+    <text x="40" y="140" font-size="24" fill="white" fill-opacity="0.7">Sonnet 4.6 · 30×</text>
+    <text x="40" y="180" font-size="22" fill="white" fill-opacity="0.5">Opus 4.6 · 24×</text>
+
+    <line x1="500" y1="30" x2="500" y2="190" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+
+    <text x="540" y="50" font-size="18" fill="white" fill-opacity="0.5" letter-spacing="2">TOP SLASH COMMANDS</text>
+    <text x="540" y="100" font-size="28" fill="white" font-weight="600">/effort · 692</text>
+    <text x="540" y="140" font-size="24" fill="white" fill-opacity="0.7">/usage · 126</text>
+    <text x="540" y="180" font-size="22" fill="white" fill-opacity="0.5">/plan · 90</text>
+  </g>
+
+  <g opacity="0.06" fill="white">
+    <circle cx="60" cy="1860" r="2"/>
+    <circle cx="180" cy="1860" r="2"/>
+    <circle cx="300" cy="1860" r="2"/>
+    <circle cx="420" cy="1860" r="2"/>
+    <circle cx="540" cy="1860" r="2"/>
+    <circle cx="660" cy="1860" r="2"/>
+    <circle cx="780" cy="1860" r="2"/>
+    <circle cx="900" cy="1860" r="2"/>
+    <circle cx="1020" cy="1860" r="2"/>
+  </g>
+
+  <text x="540" y="1790" text-anchor="middle" font-size="20" fill="white" fill-opacity="0.4" letter-spacing="2">
+    LOCAL-ONLY · ANONYMIZED · GENERATED BY README.SKILL
+  </text>
+  <text x="540" y="1825" text-anchor="middle" font-size="17" fill="white" fill-opacity="0.25">
+    github.com/study8677/Readme.skill · v2.4 · 2026-04-28
+  </text>
+</svg>

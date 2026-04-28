@@ -758,8 +758,38 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 - 卡片用 `<rect rx="20">` 圆角；分隔线用 `<line stroke-opacity="0.1">`
 - letter-spacing 在英文标签上加 2-6px 提升设计感
 
+### 语言决定（中文 / 英文双版本）
+
+海报有中英两个版本。决定哪种：
+
+1. **默认看用户当次提问的语言**：
+   - 用户用中文问 → 输出 `output/poster_<DATE>_zh.svg`
+   - 用户用英文问 → 输出 `output/poster_<DATE>_en.svg`
+2. **明确指定**: 用户说 "中文版" / "Chinese poster" / "English version" / "EN" / "ZH" 时按指定语言生成
+3. **双语**: 用户说 "两个都要" / "both" / "bilingual" 时，两份都生成
+
+### 翻译规则 — 哪些翻译，哪些保留英文
+
+**保留英文不翻译**（中英版都用英文，因为这是行业标准术语 / 设计感词）：
+- 技术术语：`token` / `tokens` / `through` / `cache` / `leverage` / `commits` / `stars` / `repos` / `langs` / `days` / `active` / `models` / `sessions` / `threads`
+- 模型名：`Opus` / `Sonnet` / `Haiku` / `GPT-5.4` / `GPT-5.5` 等
+- Slash 命令：`/effort` / `/usage` / `/plan` / `/compact` 等
+- 仓库名 / 用户名 / `GitHub` / `Readme.skill` / 版本号
+- 大写 letter-spaced 标签（卡片标签如 `LOCAL COMMITS` / `TOKENS THROUGH` / `EVOLUTION`） —— 设计语言，两版都用英文
+
+**翻译的部分**（中英文版差异点）：
+| 元素 | 中文版 | 英文版 |
+| --- | --- | --- |
+| 主标题（一句叙事） | 「118 天 · 双引擎 · 一个人的小团队」 | "118 Days · Two-Engine · One-Person Team" |
+| Evolution 节点描述 | 「Codex 起步」「tokens ↑6×」「Claude 加入」「双引擎峰值」 | "Codex starts" / "Tokens up 6×" / "Claude joins" / "Two-engine peak" |
+| 副信息卡 section 名 | 「CACHE LEVERAGE 排行」「TOP SLASH 命令」 | "CACHE LEVERAGE RANK" / "TOP SLASH COMMANDS" |
+| Footer | 都用英文（设计感） | 都用英文（设计感） |
+
 ### 参考样板
-`examples/example_poster.svg` —— 1080×1920 竖屏，10 维度的脱敏 demo，可直接抄结构。
+- 中文版: `examples/example_poster_zh.svg`
+- 英文版: `examples/example_poster_en.svg`
+
+两份对照来看一下"哪些翻译、哪些保留"的具体边界。
 
 ---
 

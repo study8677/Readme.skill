@@ -87,7 +87,10 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md`。
 
 两份产物：
 1. **Markdown profile** — 详细叙事报告，10 个维度，参考 [`examples/example_profile.md`](./examples/example_profile.md)
-2. **SVG 海报**（v2.4 新增） — 一张 1080×1920 竖屏视觉海报，6 个英雄数字 + Evolution 时间线，参考 [`examples/example_poster.svg`](./examples/example_poster.svg)
+2. **SVG 海报**（v2.4 新增） — 一张 1080×1920 竖屏视觉海报，6 个英雄数字 + Evolution 时间线，**自动按用户提问语言选择中/英版**：
+   - 中文版: [`examples/example_poster_zh.svg`](./examples/example_poster_zh.svg)
+   - 英文版: [`examples/example_poster_en.svg`](./examples/example_poster_en.svg)
+   - 技术术语（token / star / commit / model 名 / slash 命令）两版都保留英文，只翻译叙事部分
 
 ### Markdown profile 结构
 
