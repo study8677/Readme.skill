@@ -7,7 +7,7 @@ description: >
   Trigger when the user says: "生成我的 AI 档案" / "做一份 AI-native README" /
   "分析我的 Claude 使用情况" / "总结我的 AI 使用" / "build my AI usage profile"
   / "summarize my Claude / Codex history" / "生成开发者画像".
-  全程本地、只读、默认匿名；不会读取任何对话正文，不会上传任何数据。
+  全程本地、只读、默认匿名、不上传任何数据。
 license: MIT
 ---
 
@@ -311,7 +311,7 @@ Aggregate:
 - 总活跃天数 = unique union of all dates from
   `dailyActivity`, codex `by_date`, history `by_date`
 - 跨度 = `min..max` of those dates
-- 总 sessions / 总消息 / 总 tokens (Claude) / 总 threads / 总 tokens (Codex)
+- 总 sessions / 总消息 / **claude_spent**（Σ input+output+cache_creation）/ **claude_cache_read** / 总 threads / **codex_tokens**（这四个数字必须出现在「一览」里）
 - 同期 GitHub: commits, PRs, issues, calendar_total
 - 本地 git: commits / +additions / −deletions / repos
 - **Velocity 指标**（v2.0 新增）:
@@ -501,6 +501,7 @@ Write to `output/profile_<YYYYMMDD>.md` using **exactly** this structure
 - 日均产出：**<commits_per_day>** commits / **<loc_churn_per_day>** 行代码变动 / **<github_contribs_per_day>** GitHub contributions
 - 同时维护 **<git_repos>** 个仓库，横跨 **<cross_stack_langs>** 门语言
 - 同期 GitHub：**<github_commits>** commits / **<github_prs>** PRs / **<github_issues>** issues / **<calendar_total>** 总贡献
+- AI 投入：**<claude_spent>** Claude 新付费 token + **<codex_tokens>** Codex token；复用 **<claude_cache_read>** 缓存（占 Claude I/O **<cache_pct>%**）
 - 主力工具：Claude Code (Opus 4.6 + Sonnet 4.6) + Codex CLI (GPT-5.4)
 
 ## 🚀 Velocity & Leverage — AI 让一个人拥有了小团队的交付能力
@@ -652,7 +653,7 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 ## 📊 数据来源 & 隐私承诺
 
 - 数据 100% 本地：`~/.claude/*` + `~/.codex/*` + 本地 `git log` + GitHub via `gh`
-- **未读取任何对话正文**
+- 对话正文仅用于关键词与协作风格分析，原文不会出现在报告中
 - 项目名已匿名，API key / token / 邮箱 已正则清洗
 - 报告由 Claude Code / Codex 按 Readme.skill 自动生成，可重复运行
 - 生成时间: **<ISO timestamp>**
@@ -688,8 +689,7 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ## 一些务必遵守的红线
 
-- **永远不要** 读取 `~/.claude/projects/*/<id>.jsonl` 文件里的 `message.content` 字段
-- **永远不要** 把任何对话原文写进 README
+- 可以读取 `~/.claude/projects/*/<id>.jsonl` 里的 `message.content` 用于关键词提取、协作风格、Session 架构等深度分析（Step 6.3 / 6.5 受益）；但**不要把任何对话原文一字不差地写进 README**——脱敏后的统计、概括、片段化关键词可以
 - **永远不要** 联网（除 `gh` 调用 GitHub 自身）
 - **永远不要** 修改 `~/.claude` 或 `~/.codex` 下任何文件
 - **永远不要** 写脚本替代本指令；本 skill 的本质就是让 agent 自己读、自己算、自己写

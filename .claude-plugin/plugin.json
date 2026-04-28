@@ -1,0 +1,12 @@
+{
+  "name": "readme-skill",
+  "description": "Generate an AI-Native developer profile from local Claude Code + Codex data, GitHub contributions, and git log. Local-only, read-only, anonymized by default.",
+  "version": "2.0.0",
+  "author": {
+    "name": "JingWen Fan",
+    "url": "https://github.com/study8677"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/study8677/Readme.skill",
+  "repository": "https://github.com/study8677/Readme.skill"
+}

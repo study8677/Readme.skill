@@ -4,7 +4,7 @@
 
 ## 这是什么
 
-Readme.skill 不是一个程序，而是一份给 AI agent 的指令集（即 [`SKILL.md`](./SKILL.md)）。当你在 Claude Code 或 Codex 里说出触发词（如「生成我的 AI 档案」），AI 会按照 SKILL.md 的步骤：
+Readme.skill 不是一个程序，而是一份给 AI agent 的指令集（即 [`SKILL.md`](./skills/readme-skill/SKILL.md)）。当你在 Claude Code 或 Codex 里说出触发词（如「生成我的 AI 档案」），AI 会按照 SKILL.md 的步骤：
 
 1. 读取本机 `~/.claude/` 与 `~/.codex/` 的统计文件、SQLite、历史 JSONL
 2. 调用 `gh` 拉取你的 GitHub 公开贡献日历与 top 仓库
@@ -12,11 +12,22 @@ Readme.skill 不是一个程序，而是一份给 AI agent 的指令集（即 [`
 4. 计算 7 个维度（一览 / AI-Native / 协作风格 / 项目 / 主题 / 节奏 / 投入×产出）
 5. 默认匿名脱敏，输出 `output/profile_YYYYMMDD.md`
 
-整个过程**只读、不联网（除 `gh`）、不读对话正文**，可放心运行并对外分享结果。
+整个过程**只读、不联网（除 `gh`）**，可放心运行并对外分享结果。对话正文可被读取以提取关键词和协作风格信号，但原文不会写进报告。
 
 ## 快速开始
 
-### 方式一：Clone + 软链（推荐）
+### 方式零：Claude Code Plugin（推荐 —— 两行命令）
+
+在 Claude Code 里：
+
+```
+/plugin marketplace add study8677/Readme.skill
+/plugin install readme-skill@study8677
+```
+
+Claude Code 自动发现 `skills/readme-skill/SKILL.md` 并挂载，无需手动 symlink。需要 Claude Code 支持 plugin 子系统的版本。
+
+### 方式一：Clone + 软链（Codex CLI 或不想用 plugin 的用户）
 
 ```bash
 git clone https://github.com/study8677/Readme.skill.git
@@ -24,11 +35,11 @@ cd Readme.skill
 
 # Claude Code 用户
 mkdir -p ~/.claude/skills/readme-skill
-ln -sf "$(pwd)/SKILL.md" ~/.claude/skills/readme-skill/SKILL.md
+ln -sf "$(pwd)/skills/readme-skill/SKILL.md" ~/.claude/skills/readme-skill/SKILL.md
 
 # Codex CLI 用户
 mkdir -p ~/.codex/skills/readme-skill
-ln -sf "$(pwd)/SKILL.md" ~/.codex/skills/readme-skill/SKILL.md
+ln -sf "$(pwd)/skills/readme-skill/SKILL.md" ~/.codex/skills/readme-skill/SKILL.md
 ```
 
 ### 方式二：直接复制
@@ -38,21 +49,21 @@ git clone https://github.com/study8677/Readme.skill.git
 
 # Claude Code
 mkdir -p ~/.claude/skills/readme-skill
-cp Readme.skill/SKILL.md ~/.claude/skills/readme-skill/
+cp Readme.skill/skills/readme-skill/SKILL.md ~/.claude/skills/readme-skill/
 
 # Codex CLI
 mkdir -p ~/.codex/skills/readme-skill
-cp Readme.skill/SKILL.md ~/.codex/skills/readme-skill/
+cp Readme.skill/skills/readme-skill/SKILL.md ~/.codex/skills/readme-skill/
 ```
 
-### 方式三：一行安装
+### 方式三：一行 curl
 
 ```bash
 # Claude Code
-mkdir -p ~/.claude/skills/readme-skill && curl -fsSL https://raw.githubusercontent.com/study8677/Readme.skill/main/SKILL.md -o ~/.claude/skills/readme-skill/SKILL.md
+mkdir -p ~/.claude/skills/readme-skill && curl -fsSL https://raw.githubusercontent.com/study8677/Readme.skill/main/skills/readme-skill/SKILL.md -o ~/.claude/skills/readme-skill/SKILL.md
 
 # Codex CLI
-mkdir -p ~/.codex/skills/readme-skill && curl -fsSL https://raw.githubusercontent.com/study8677/Readme.skill/main/SKILL.md -o ~/.codex/skills/readme-skill/SKILL.md
+mkdir -p ~/.codex/skills/readme-skill && curl -fsSL https://raw.githubusercontent.com/study8677/Readme.skill/main/skills/readme-skill/SKILL.md -o ~/.codex/skills/readme-skill/SKILL.md
 ```
 
 ## 使用
@@ -108,7 +119,7 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md`。
 ## 隐私
 
 - 全部数据采集发生在**本机**，除 `gh` 调用 GitHub 自身外不联网
-- 永不读取 `message.content` 等对话正文字段
+- 对话正文（`message.content`）可被读取以增强关键词、协作风格、Session 架构分析，但原文不会写进报告
 - 默认对项目名、私有仓库做匿名映射；按 OWASP-style 正则清洗 API key / token / webhook / 邮箱
 - skill 不会修改 `~/.claude` 或 `~/.codex` 下任何文件（SQLite 用 `mode=ro&immutable=1` 打开）
 
@@ -116,7 +127,7 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md`。
 
 > Skill = 给 AI agent 的指令集，不是替它做事的代码。
 
-[SKILL.md](./SKILL.md) 是唯一的真实交付物。任何"为什么不用一个 Python 脚本一把跑完？"的冲动都被刻意抑制——目的是让 AI 自己理解数据、自己做权衡、自己写出有温度的文字，而不是机械地填模板。
+[SKILL.md](./skills/readme-skill/SKILL.md) 是唯一的真实交付物。任何"为什么不用一个 Python 脚本一把跑完？"的冲动都被刻意抑制——目的是让 AI 自己理解数据、自己做权衡、自己写出有温度的文字，而不是机械地填模板。
 
 ## 协议
 
