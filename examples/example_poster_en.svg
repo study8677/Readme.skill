@@ -52,9 +52,9 @@
 
   <text x="60" y="245" font-size="22" fill="white" fill-opacity="0.5" letter-spacing="5">AI-NATIVE DEVELOPER PROFILE</text>
 
-  <!-- AI 自评金句 (英文) -->
-  <text x="60" y="320" font-size="48" font-weight="700" fill="white">You're not just using AI</text>
-  <text x="60" y="383" font-size="48" font-weight="700" fill="url(#accent)">You're building infra for AI</text>
+  <!-- AI 自评金句 (Tone A: shock-and-relate metaphor) -->
+  <text x="60" y="320" font-size="44" font-weight="700" fill="white">117 days · 12.9B tokens with AI</text>
+  <text x="60" y="383" font-size="44" font-weight="700" fill="url(#accent)">That's War &amp; Peace × 25,000 times</text>
 
   <text x="60" y="445" font-size="22" font-weight="500" fill="white" fill-opacity="0.7" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">12.9B tokens · 23× cache · 8 skills · 6 langs</text>
 

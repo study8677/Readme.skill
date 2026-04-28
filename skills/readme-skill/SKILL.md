@@ -791,21 +791,42 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 #### A. AI 自评金句（双行 44-50px 大字标题）
 
-不是堆数据，而是让 AI 看了用户数据后，写一段**有人格的评语**作为海报副标题。基于数据画像决定 tone：
+不是堆数据，而是让 AI 看了用户数据后，写一段**有破圈传播力的评语**作为海报副标题。**默认用 Tone A（反差数字 + 通俗类比）—— 把 token 量换算成"等于 N 遍世界名著"**，让圈外人 3 秒被震撼。
 
-| 画像（命中即触发） | 中文金句样例 | 英文金句样例 |
-| --- | --- | --- |
-| 多模型 + 高 cache + 自建 skills | 你不是 AI 的使用者 / 是 AI 工作流的建筑师 | You're not just using AI / You're building infra for AI |
-| commits / LOC 极高 + 跨多 repo | 一个人 / 一个小团队的产出 | One person / a whole team's throughput |
-| plan-first / effort 频繁切换 | 你不是问 AI 干什么 / 是教 AI 怎么干 | You don't ask AI what to do / You teach AI how to do it |
-| Cache leverage > 25× | 1 个新 token / 撬动 25 个缓存 token | 1 new token / leverages 25 cached |
-| 跨 ≥ 5 语言 + 多 repo | AI 让你成为 N 个仓库的 maintainer | AI lets you maintain N repos in M langs |
+##### Tone A（默认，最破圈）：反差数字 + 通俗类比 ⭐
 
-规则：
-1. **必须基于真实数据画像，不能编造** —— 数据不支持的金句不要写
-2. 中文版每行 ≤ 14 字、英文版每行 ≤ 36 chars，保证视觉冲击
-3. 第二行用 `fill="url(#accent)"` 渐变色填充，制造视觉重音
-4. 金句下面跟一行 monospace 数据浓缩：`<X> tokens · <Y>× cache · <Z> skills · <N> langs`
+把 `total_through`（spent + cache_read）换算成大众能感知的「读了 N 遍《红楼梦》/ N 倍 War & Peace」。
+
+**换算公式**：
+- `chinese_chars ≈ total_through × 0.7`（1 token ≈ 0.7 个汉字）
+- `dhm_count ≈ chinese_chars / 730_000`（《红楼梦》约 73 万字）
+- `english_words ≈ total_through × 0.75`（1 token ≈ 0.75 个英文 word）
+- `wap_count ≈ english_words / 587_000`（*War & Peace* 约 58.7 万 words）
+
+**样例**（基于 12.9B token through 的 demo）：
+- 中：「<span_days> 天，我和 AI 写下 <X> 亿字 / 等于把《红楼梦》写了 <N> 万遍」
+  - 实填：`117 天，我和 AI 写下 120 亿字 / 等于把《红楼梦》写了 1 万遍`
+- 英：「<span_days> days · <total_through> tokens with AI / That's War & Peace × <N> times」
+  - 实填：`117 days · 12.9B tokens with AI / That's War & Peace × 25,000 times`
+
+**为什么 Tone A 优先**：12.9B 这种数字对圈外人是抽象的；红楼梦/War & Peace 任何受过教育的人都立刻有量感。这是从「圈内炫耀」变「破圈震撼」的关键。
+
+##### Tone B-F（备选，仅当 Tone A 数据真撑不起 或 用户明确要求其他 tone 时启用）
+
+| 画像（命中即触发） | tone | 中文样例 | 英文样例 |
+| --- | --- | --- | --- |
+| 最长 session messages > 1000 | B 拟人化关系 | 跟 AI 吵了 <msgs> 轮 / 没分手 | <msgs>-message marathon / Still together |
+| commits / LOC 极高 + 跨多 repo | C 角色反转 | 我不再写代码 / 我让代码自己长出来 | I don't write code / I grow code from prompts |
+| Cache leverage > 25× | D 自嘲 humble brag | 不是我手快 / 是 Claude 24h 陪我 | I'm not fast / Claude never sleeps |
+| token + commits 都极高（"打工人"） | E 反差悖论 | 老板以为我在摸鱼 / 我和 AI 烧了 <X>B token | Boss thinks I slack / Burned <X>B tokens |
+| plan-first 高 + 多自建 skills | F 哲学/思考 | 我不写代码 / 我编排 AI 替我写 | I don't write code / I orchestrate AI |
+
+**规则**：
+1. **必须基于真实数据画像，禁止编造** —— 数据不支持的金句不要写
+2. **默认 Tone A**：除非 `total_through < 1B`（数字撑不起类比），否则永远先用 Tone A
+3. 中文版每行 ≤ 16 字、英文版每行 ≤ 38 chars，保证视觉冲击
+4. 第二行用 `fill="url(#accent)"` 渐变色填充，制造视觉重音（"红楼梦"那行用渐变）
+5. 金句下面跟一行 monospace 数据浓缩：`<X> tokens · <Y>× cache · <Z> skills · <N> langs`
 
 #### B. 身份徽章（顶部 4 胶囊带）
 

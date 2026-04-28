@@ -54,9 +54,9 @@
   <!-- AI-NATIVE 标签 -->
   <text x="60" y="245" font-size="22" fill="white" fill-opacity="0.5" letter-spacing="5">AI-NATIVE DEVELOPER PROFILE</text>
 
-  <!-- 金句双行 -->
-  <text x="60" y="320" font-size="50" font-weight="700" fill="white">你不是 AI 的使用者</text>
-  <text x="60" y="385" font-size="50" font-weight="700" fill="url(#accent)">是 AI 工作流的建筑师</text>
+  <!-- AI 自评金句 双行（Tone A: 反差数字 + 通俗类比） -->
+  <text x="60" y="320" font-size="46" font-weight="700" fill="white">117 天，我和 AI 写下 120 亿字</text>
+  <text x="60" y="385" font-size="46" font-weight="700" fill="url(#accent)">等于把《红楼梦》写了 1 万遍</text>
 
   <!-- 数据浓缩 monospace -->
   <text x="60" y="445" font-size="22" font-weight="500" fill="white" fill-opacity="0.7" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">12.9B tokens · 23× cache · 8 skills · 6 langs</text>
