@@ -305,7 +305,7 @@ Aggregate:
 
 ---
 
-## Step 6 — 计算 7 个维度（你做推理，不要写脚本）
+## Step 6 — 计算 10 个维度（你做推理，不要写脚本）
 
 ### 6.1 一览
 - 总活跃天数 = unique union of all dates from
@@ -406,9 +406,7 @@ make, get, just, also, will, would, can.
   - `loc_churn_per_day = (additions + deletions) / active_days`
   - `github_contribs_per_active_day = calendar_total / active_days`
   - 贡献爆发日：连续 3+ 天 daily_contributions > 20 的窗口
-- 单位投入产出（保留但标注为「参考」，不放显眼位置）:
-  - `tokens_per_commit = claude_tokens_spent / git_local_commits`
-  - `tokens_per_loc    = claude_tokens_spent / (additions + deletions)`
+- 单位投入产出（`tokens_per_commit` / `tokens_per_loc`）已迁移到 **6.10 Token 经济学**，6.7 只讲 GitHub / 仓库 / 语言
 
 ### 6.8 Velocity & Leverage（v2.0 新增 —— AI 让你快了多少、广了多少）
 
@@ -450,6 +448,31 @@ make, get, just, also, will, would, can.
 2026-03  Claude Code 加入 → plan-mode + effort 调节 → 开始自建 skills
 2026-04  双工具编排成熟，skills 生态完善，日均 10 commit
 ```
+
+### 6.10 💎 Token 经济学（v2.1 新增 —— 把 token 投入当成"AI 投资"来叙事）
+
+目的：不只展示"用了多少 token"，而是讲清 **token 投入怎么花、Cache leverage 多深、模型迁移如何省了成本**。把 token 当 AI 时代的"原材料 + 杠杆"来叙事，不是产出的注脚。
+
+数据来源：
+- Claude `stats-cache.json` 的 `modelUsage` + `dailyModelTokens`
+- Codex sqlite `threads` 的 `tokens_used` + 月度聚合（Step 3.1 已查）
+
+计算：
+1. **总投入** = `claude_spent + codex_tokens`（新付费 token 总量）
+2. **总杠杆** = `claude_cache_read`（缓存复用 token 总量）
+3. **Cache leverage 倍率** = `claude_cache_read / claude_spent`（每 1 个新 token 撬动几个缓存 token）
+4. **每模型占比** = `model.spent / Σ all_models.spent`（Claude 与 Codex 合在一起算）
+5. **每模型 leverage** = `model.cache_read / model.spent`（哪个模型 caching 习惯最熟）
+6. **月度 token 趋势** = `dailyModelTokens` + Codex 月度聚合按月汇总，找增长拐点
+7. **模型迁移注解** = 比较相邻两个月每模型 spent 增减，识别"萎缩-接管"事件
+   （例如 `<YYYY-MM>: Opus 4.6 spent ↓ 40%，Sonnet 4.6 spent ↑ 60%`）
+8. **单位投入产出**（从原 6.7 移过来，仅参考）= `claude_spent / git_commits` 与 `claude_spent / (additions + deletions)`
+
+叙事重点：
+- 一句话开场：「**<X>** 新付费 token 撬动 **<Y>** 缓存复用，杠杆比 **1 : <N>**」
+- 月度趋势用文字 sparkline 或表格
+- 模型迁移注解：哪些月份发生了什么、为什么省/费 token
+- 单位投入产出标注为"参考"，提醒不要当 KPI
 
 ---
 
@@ -628,6 +651,33 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 - 首次 / 最近活跃: …
 - 活跃天数 / 最长连续 / 单日峰值: …
 
+## 💎 Token 经济学
+
+> 一句叙事开场：「**<spent_tokens>** 新付费 token 撬动 **<cache_read>** 缓存复用，杠杆比 **1 : <leverage>**；总通过我手里 **<total_tokens>** token。」
+
+### 每模型 token 明细（按 spent 排序）
+| 模型 | spent | cache-read | leverage | 占总 spent |
+| --- | ---: | ---: | ---: | ---: |
+| Claude Opus 4.6 | … | … | …× | …% |
+| Claude Sonnet 4.6 | … | … | …× | …% |
+| Claude Haiku 4.5 | … | … | …× | …% |
+| GPT-5.4 (Codex) | … | — | — | …% |
+| … | | | | |
+
+### 月度 token 趋势
+| 月份 | Claude spent | Claude cache | Codex tokens | 主力模型 | 注解 |
+| --- | ---: | ---: | ---: | --- | --- |
+| <YYYY-MM> | <n> | <n> | <n> | <model> | <事件 / 迁移> |
+
+### 模型迁移注解
+- <YYYY-MM>: <模型 A 萎缩 −X%>，<模型 B 接管 +Y%>，<推测原因>
+- …
+
+### 单位投入产出（仅参考，勿当 KPI）
+- 每 commit ≈ **<n>** Claude tokens（仅 spent，不含 cache 与 Codex）
+- 每行代码 ≈ **<n>** Claude tokens
+> 提醒：AI 产出还包含大量不直接转化为 commit 的高价值劳动（架构 review / 数据清洗 / plan 推演 / skill 重构）。把"每 commit X tokens"当 KPI 是反激励。
+
 ## 💰 产出 & 投入
 
 ### GitHub 同期产出
@@ -641,14 +691,6 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ### 主要语言
 <语言列表>
-
-### 每模型 token 参考
-<token 表 —— 放在末尾，降低权重>
-
-### 单位投入产出（参考）
-- 每 commit ≈ **<n>** Claude tokens
-- 每行代码 ≈ **<n>** Claude tokens
-> 提醒：AI 产出还包含大量不直接转化为 commit 的高价值劳动。
 
 ## 📊 数据来源 & 隐私承诺
 
