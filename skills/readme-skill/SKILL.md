@@ -785,11 +785,68 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 | 副信息卡 section 名 | 「CACHE LEVERAGE 排行」「TOP SLASH 命令」 | "CACHE LEVERAGE RANK" / "TOP SLASH COMMANDS" |
 | Footer | 都用英文（设计感） | 都用英文（设计感） |
 
+### 链式传播 3 件套（v2.4 链式传播版）
+
+为了让海报有"想转发、想晒、看到的人想自己也来一份"的传播力，海报必须包含以下 3 件套：
+
+#### A. AI 自评金句（双行 44-50px 大字标题）
+
+不是堆数据，而是让 AI 看了用户数据后，写一段**有人格的评语**作为海报副标题。基于数据画像决定 tone：
+
+| 画像（命中即触发） | 中文金句样例 | 英文金句样例 |
+| --- | --- | --- |
+| 多模型 + 高 cache + 自建 skills | 你不是 AI 的使用者 / 是 AI 工作流的建筑师 | You're not just using AI / You're building infra for AI |
+| commits / LOC 极高 + 跨多 repo | 一个人 / 一个小团队的产出 | One person / a whole team's throughput |
+| plan-first / effort 频繁切换 | 你不是问 AI 干什么 / 是教 AI 怎么干 | You don't ask AI what to do / You teach AI how to do it |
+| Cache leverage > 25× | 1 个新 token / 撬动 25 个缓存 token | 1 new token / leverages 25 cached |
+| 跨 ≥ 5 语言 + 多 repo | AI 让你成为 N 个仓库的 maintainer | AI lets you maintain N repos in M langs |
+
+规则：
+1. **必须基于真实数据画像，不能编造** —— 数据不支持的金句不要写
+2. 中文版每行 ≤ 14 字、英文版每行 ≤ 36 chars，保证视觉冲击
+3. 第二行用 `fill="url(#accent)"` 渐变色填充，制造视觉重音
+4. 金句下面跟一行 monospace 数据浓缩：`<X> tokens · <Y>× cache · <Z> skills · <N> langs`
+
+#### B. 身份徽章（顶部 4 胶囊带）
+
+基于数据自动判定徽章。每个用户最多展示 **4 个最强徽章**（按下表优先级取前 4）：
+
+| 徽章 | 触发条件 | 显示文本 |
+| --- | --- | --- |
+| TWO-ENGINE PILOT | Claude sessions ≥ 50 且 Codex threads ≥ 50 | `TWO-ENGINE PILOT` |
+| CACHE MASTER | claude_cache_leverage ≥ 15× | `CACHE MASTER · <leverage>×` |
+| SKILL BUILDER | 自建 skills + automations + rules ≥ 5 | `SKILL BUILDER · <n>` |
+| POLYGLOT | 跨栈语言 ≥ 5 | `POLYGLOT · <n>` |
+| VELOCITY KING | 日均 commits ≥ 8 | `VELOCITY KING · <n>/d` |
+| PLAN-FIRST | session-first 是 `/plan` 的占比 ≥ 8% | `PLAN-FIRST · <%>` |
+| TOKEN WHALE | total_through ≥ 10B | `TOKEN WHALE · <total>` |
+| OPEN-SOURCE | total stars ≥ 1000 | `OPEN-SOURCE · <stars>★` |
+| EARLY ADOPTER | 使用过 ≥ 3 个不同模型版本 | `EARLY ADOPTER` |
+| LONG-CONTEXT PRO | 用过 Opus 4.7-1M ≥ 10 次 | `LONG-CONTEXT PRO` |
+
+视觉：圆角胶囊 235×60 (rx=30)，1.5px accent 渐变描边，文字 17px letter-spaced 1.5。
+4 个胶囊一行排列，gap 25px，左 60px 起。徽章文字两版一致（都用英文，都是设计语言）。
+
+#### C. 30 秒安装 CTA（底部，**不放二维码**）
+
+替代单纯 footer，给一个行动召唤区。看到海报的人能直接看到 install 命令。设计：
+
+- 顶部分隔线（1px white 15% opacity）
+- 大字标题 24-26px letter-spaced：`GENERATE YOURS IN 30 SECONDS`（两版都英文，保持设计感）
+- 两行 monospace 命令（第二行用 `fill="url(#accent)"` 突出）：
+  - `/plugin marketplace add study8677/Readme.skill`
+  - `/plugin install readme-skill@study8677`
+- 短分隔线
+- 仓库 URL：`github.com/study8677/Readme.skill`（letter-spaced 2px，20px）
+- 底部脱敏小字：`LOCAL-ONLY · ANONYMIZED · v<version> · <date>`（13px，30% opacity）
+
+**为什么不放二维码**：QR 在小屏幕扫描成功率低；让人看到命令直接复制粘贴更可控；保持视觉简洁。让"想生成自己的"的人主动去 google 搜 repo，反而过滤出真正动机强的种子用户。
+
 ### 参考样板
 - 中文版: `examples/example_poster_zh.svg`
 - 英文版: `examples/example_poster_en.svg`
 
-两份对照来看一下"哪些翻译、哪些保留"的具体边界。
+两份对照来看一下"哪些翻译、哪些保留"的具体边界，以及徽章 + 金句 + CTA 在 SVG 里的实现方式。
 
 ---
 
