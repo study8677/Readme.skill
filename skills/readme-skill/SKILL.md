@@ -707,6 +707,170 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ---
 
+## Step 8b — 海报渲染（v2.4 新增 · 可选）
+
+如果用户说"生成海报" / "AI 海报" / "social card" / "可分享图" / "make poster"，或默认就把它当一份附加交付物，在 markdown profile 完成后再渲染一份 SVG 海报到 `output/poster_<YYYYMMDD>.svg`。
+
+### 设计原则（来自 v2.4 brief，由 Codex 审校）
+
+1. **3 秒看懂身份 + 6 个可信数字** —— 视觉冲击不靠堆渐变，靠选对 6 个英雄数字。读者扫一眼就知道你是谁、做了什么
+2. **避免 emoji** —— 跨平台字体不一致；emoji 在 svg 里渲染常变方块或被字体替换
+3. **字体用 system-ui fallback** —— 用 `font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"`，不内嵌字体
+4. **hero 数字必须有证据** —— 全部来自前面 10 维度的已算量，缺数据降级显示 `—`，**不补想象指标**
+5. **SVG 是源图，不是社媒直发** —— 在 README / 终端总结里同步给出 PNG 转换命令
+
+### 标准布局（1080×1920 竖屏）
+
+| 区域 | y 位置 | 内容 |
+| --- | ---: | --- |
+| 顶部品牌条 | 120 | 6px 渐变小条（accent） |
+| 一句叙事标题 | 200–345 | 标签 + 大字标题 + 时间跨度副标题 |
+| 6 hero metric 卡 (2×3) | 440–1140 | 每张卡 465×220 圆角，数字 100-120px，标签 20px letter-spaced |
+| Evolution timeline | 1240–1430 | 横向 4 milestone（圆点 + 月份 + 事件） |
+| 副信息卡（左右两栏） | 1500–1720 | Cache leverage 排行 / Top slash 命令 |
+| 底部 footer | 1790–1825 | 脱敏标识 + repo URL + 日期 |
+
+### 6 个 hero 数字推荐（按显眼度排序）
+
+| 卡 | 数据来源（从 10 维度取） |
+| --- | --- |
+| 1 | `<span_days> · <active_days> ACTIVE`（一览） |
+| 2 | `<git_total_commits> LOCAL COMMITS`（Velocity） |
+| 3 | `<total_through>` TOKENS THROUGH（Token 经济学，spent + cache_read 总量） |
+| 4 | `1 : <cache_leverage> CACHE LEVERAGE`（Token 经济学） |
+| 5 | `<total_stars> GITHUB STARS`（投入产出） |
+| 6 | `<n_repos> · <n_langs> REPOS · LANGS`（Velocity） |
+
+任一项缺数据时，替换为：总 sessions（`<claude_sessions> + <codex_threads>`）/ 自建 skills 数 / 单日峰值消息数。
+
+### 副信息卡（左右两栏）
+- 左：Cache leverage 排行（top 3 模型，从 Token 经济学）
+- 右：Top slash 命令（top 3，从协作风格）
+
+### 颜色方案
+- 背景渐变：深紫 `#0c0a1f` → 中紫 `#1a1442` → 深绿 `#0d2e1f`
+- 强调渐变：Claude 紫 `#8b5cf6` → Codex 绿 `#10b981`
+- 文字层次：纯白 / 50% 透明度 / 25% 透明度（建立视觉重要性）
+
+### 实现细节
+- 用纯 SVG 文本字符串（无外部资源、无嵌入字体、无 base64 图片）
+- `<linearGradient>` 定义在 `<defs>`，`fill="url(#bg)"` 引用
+- 卡片用 `<rect rx="20">` 圆角；分隔线用 `<line stroke-opacity="0.1">`
+- letter-spacing 在英文标签上加 2-6px 提升设计感
+
+### 语言决定（中文 / 英文双版本）
+
+海报有中英两个版本。决定哪种：
+
+1. **默认看用户当次提问的语言**：
+   - 用户用中文问 → 输出 `output/poster_<DATE>_zh.svg`
+   - 用户用英文问 → 输出 `output/poster_<DATE>_en.svg`
+2. **明确指定**: 用户说 "中文版" / "Chinese poster" / "English version" / "EN" / "ZH" 时按指定语言生成
+3. **双语**: 用户说 "两个都要" / "both" / "bilingual" 时，两份都生成
+
+### 翻译规则 — 哪些翻译，哪些保留英文
+
+**保留英文不翻译**（中英版都用英文，因为这是行业标准术语 / 设计感词）：
+- 技术术语：`token` / `tokens` / `through` / `cache` / `leverage` / `commits` / `stars` / `repos` / `langs` / `days` / `active` / `models` / `sessions` / `threads`
+- 模型名：`Opus` / `Sonnet` / `Haiku` / `GPT-5.4` / `GPT-5.5` 等
+- Slash 命令：`/effort` / `/usage` / `/plan` / `/compact` 等
+- 仓库名 / 用户名 / `GitHub` / `Readme.skill` / 版本号
+- 大写 letter-spaced 标签（卡片标签如 `LOCAL COMMITS` / `TOKENS THROUGH` / `EVOLUTION`） —— 设计语言，两版都用英文
+
+**翻译的部分**（中英文版差异点）：
+| 元素 | 中文版 | 英文版 |
+| --- | --- | --- |
+| 主标题（一句叙事） | 「118 天 · 双引擎 · 一个人的小团队」 | "118 Days · Two-Engine · One-Person Team" |
+| Evolution 节点描述 | 「Codex 起步」「tokens ↑6×」「Claude 加入」「双引擎峰值」 | "Codex starts" / "Tokens up 6×" / "Claude joins" / "Two-engine peak" |
+| 副信息卡 section 名 | 「CACHE LEVERAGE 排行」「TOP SLASH 命令」 | "CACHE LEVERAGE RANK" / "TOP SLASH COMMANDS" |
+| Footer | 都用英文（设计感） | 都用英文（设计感） |
+
+### 链式传播 3 件套（v2.4 链式传播版）
+
+为了让海报有"想转发、想晒、看到的人想自己也来一份"的传播力，海报必须包含以下 3 件套：
+
+#### A. AI 自评金句（双行 44-50px 大字标题）
+
+不是堆数据，而是让 AI 看了用户数据后，写一段**有破圈传播力的评语**作为海报副标题。**默认用 Tone A（反差数字 + 通俗类比）—— 把 token 量换算成"等于 N 遍世界名著"**，让圈外人 3 秒被震撼。
+
+##### Tone A（默认，最破圈）：反差数字 + 通俗类比 ⭐
+
+把 `total_through`（spent + cache_read）换算成大众能感知的「读了 N 遍《红楼梦》/ N 倍 War & Peace」。
+
+**换算公式**：
+- `chinese_chars ≈ total_through × 0.7`（1 token ≈ 0.7 个汉字）
+- `dhm_count ≈ chinese_chars / 730_000`（《红楼梦》约 73 万字）
+- `english_words ≈ total_through × 0.75`（1 token ≈ 0.75 个英文 word）
+- `wap_count ≈ english_words / 587_000`（*War & Peace* 约 58.7 万 words）
+
+**样例**（基于 12.9B token through 的 demo）：
+- 中：「<span_days> 天，我和 AI 写下 <X> 亿字 / 等于把《红楼梦》写了 <N> 万遍」
+  - 实填：`117 天，我和 AI 写下 120 亿字 / 等于把《红楼梦》写了 1 万遍`
+- 英：「<span_days> days · <total_through> tokens with AI / That's War & Peace × <N> times」
+  - 实填：`117 days · 12.9B tokens with AI / That's War & Peace × 25,000 times`
+
+**为什么 Tone A 优先**：12.9B 这种数字对圈外人是抽象的；红楼梦/War & Peace 任何受过教育的人都立刻有量感。这是从「圈内炫耀」变「破圈震撼」的关键。
+
+##### Tone B-F（备选，仅当 Tone A 数据真撑不起 或 用户明确要求其他 tone 时启用）
+
+| 画像（命中即触发） | tone | 中文样例 | 英文样例 |
+| --- | --- | --- | --- |
+| 最长 session messages > 1000 | B 拟人化关系 | 跟 AI 吵了 <msgs> 轮 / 没分手 | <msgs>-message marathon / Still together |
+| commits / LOC 极高 + 跨多 repo | C 角色反转 | 我不再写代码 / 我让代码自己长出来 | I don't write code / I grow code from prompts |
+| Cache leverage > 25× | D 自嘲 humble brag | 不是我手快 / 是 Claude 24h 陪我 | I'm not fast / Claude never sleeps |
+| token + commits 都极高（"打工人"） | E 反差悖论 | 老板以为我在摸鱼 / 我和 AI 烧了 <X>B token | Boss thinks I slack / Burned <X>B tokens |
+| plan-first 高 + 多自建 skills | F 哲学/思考 | 我不写代码 / 我编排 AI 替我写 | I don't write code / I orchestrate AI |
+
+**规则**：
+1. **必须基于真实数据画像，禁止编造** —— 数据不支持的金句不要写
+2. **默认 Tone A**：除非 `total_through < 1B`（数字撑不起类比），否则永远先用 Tone A
+3. 中文版每行 ≤ 16 字、英文版每行 ≤ 38 chars，保证视觉冲击
+4. 第二行用 `fill="url(#accent)"` 渐变色填充，制造视觉重音（"红楼梦"那行用渐变）
+5. 金句下面跟一行 monospace 数据浓缩：`<X> tokens · <Y>× cache · <Z> skills · <N> langs`
+
+#### B. 身份徽章（顶部 4 胶囊带）
+
+基于数据自动判定徽章。每个用户最多展示 **4 个最强徽章**（按下表优先级取前 4）：
+
+| 徽章 | 触发条件 | 显示文本 |
+| --- | --- | --- |
+| TWO-ENGINE PILOT | Claude sessions ≥ 50 且 Codex threads ≥ 50 | `TWO-ENGINE PILOT` |
+| CACHE MASTER | claude_cache_leverage ≥ 15× | `CACHE MASTER · <leverage>×` |
+| SKILL BUILDER | 自建 skills + automations + rules ≥ 5 | `SKILL BUILDER · <n>` |
+| POLYGLOT | 跨栈语言 ≥ 5 | `POLYGLOT · <n>` |
+| VELOCITY KING | 日均 commits ≥ 8 | `VELOCITY KING · <n>/d` |
+| PLAN-FIRST | session-first 是 `/plan` 的占比 ≥ 8% | `PLAN-FIRST · <%>` |
+| TOKEN WHALE | total_through ≥ 10B | `TOKEN WHALE · <total>` |
+| OPEN-SOURCE | total stars ≥ 1000 | `OPEN-SOURCE · <stars>★` |
+| EARLY ADOPTER | 使用过 ≥ 3 个不同模型版本 | `EARLY ADOPTER` |
+| LONG-CONTEXT PRO | 用过 Opus 4.7-1M ≥ 10 次 | `LONG-CONTEXT PRO` |
+
+视觉：圆角胶囊 235×60 (rx=30)，1.5px accent 渐变描边，文字 17px letter-spaced 1.5。
+4 个胶囊一行排列，gap 25px，左 60px 起。徽章文字两版一致（都用英文，都是设计语言）。
+
+#### C. 30 秒安装 CTA（底部，**不放二维码**）
+
+替代单纯 footer，给一个行动召唤区。看到海报的人能直接看到 install 命令。设计：
+
+- 顶部分隔线（1px white 15% opacity）
+- 大字标题 24-26px letter-spaced：`GENERATE YOURS IN 30 SECONDS`（两版都英文，保持设计感）
+- 两行 monospace 命令（第二行用 `fill="url(#accent)"` 突出）：
+  - `/plugin marketplace add study8677/Readme.skill`
+  - `/plugin install readme-skill@study8677`
+- 短分隔线
+- 仓库 URL：`github.com/study8677/Readme.skill`（letter-spaced 2px，20px）
+- 底部脱敏小字：`LOCAL-ONLY · ANONYMIZED · v<version> · <date>`（13px，30% opacity）
+
+**为什么不放二维码**：QR 在小屏幕扫描成功率低；让人看到命令直接复制粘贴更可控；保持视觉简洁。让"想生成自己的"的人主动去 google 搜 repo，反而过滤出真正动机强的种子用户。
+
+### 参考样板
+- 中文版: `examples/example_poster_zh.svg`
+- 英文版: `examples/example_poster_en.svg`
+
+两份对照来看一下"哪些翻译、哪些保留"的具体边界，以及徽章 + 金句 + CTA 在 SVG 里的实现方式。
+
+---
+
 ## Step 9 — 输出与交接
 
 把 Markdown 写入 `output/profile_<YYYYMMDD>.md`，
@@ -714,8 +878,12 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ```
 ✅ Profile generated: output/profile_<YYYYMMDD>.md
+🎨 Poster:    output/poster_<YYYYMMDD>.svg  (如果生成了)
 关键数字：<sessions> sessions / <tokens> tokens / <github_commits> commits
 预览：head -40 output/profile_<YYYYMMDD>.md
+预览海报：open output/poster_<YYYYMMDD>.svg
+转 PNG：rsvg-convert -h 1920 output/poster_<YYYYMMDD>.svg > poster.png
+       (或 chromium --headless --screenshot=poster.png poster.svg)
 ```
 
 如果用户要求"私人版"，再生成一份 `output/profile_<YYYYMMDD>_private.md`

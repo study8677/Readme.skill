@@ -85,7 +85,17 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md`。
 
 ## 输出长什么样
 
-参考 [`examples/example_profile.md`](./examples/example_profile.md)（虚构数据，仅展示格式）。结构：
+两份产物：
+1. **Markdown profile** — 详细叙事报告，10 个维度，参考 [`examples/example_profile.md`](./examples/example_profile.md)
+2. **SVG 海报**（v2.4 链式传播版） — 一张 1080×1920 竖屏视觉海报，自带传播 3 件套：
+   - **A. AI 自评金句**（双行大字，根据数据画像写出有人格的评价）
+   - **B. 身份徽章**（顶部 4 胶囊：TWO-ENGINE / CACHE MASTER / SKILL BUILDER / POLYGLOT 等，自动判定）
+   - **C. 30 秒安装 CTA**（底部 install 命令 + 仓库 URL，让看到的人能立刻生成自己的）
+   - 6 个英雄数字 + Evolution 时间线 + Cache leverage 排行 + Top slash 命令
+   - **自动按用户提问语言选择中/英版**：[中文版](./examples/example_poster_zh.svg) · [英文版](./examples/example_poster_en.svg)
+   - 技术术语（token / star / commit / model 名 / slash 命令）两版都保留英文，只翻译叙事部分
+
+### Markdown profile 结构
 
 - 个人理念（来自 GitHub bio）
 - 一览（关键数字 + velocity 指标）
@@ -99,6 +109,23 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md`。
 - ⏱️ 工作节奏（24h 热力图、连续活跃、峰值日）
 - 💰 产出 & 投入（GitHub 贡献优先，token 表降级到参考）
 - 📊 数据来源 & 隐私承诺
+
+### 海报转 PNG（用于发社媒）
+
+SVG 是源图，要发微信 / 小红书 / Twitter / Instagram 通常需要 PNG：
+
+```bash
+# 方式 1: rsvg-convert （需要 brew install librsvg）
+rsvg-convert -h 1920 output/poster_*.svg > poster.png
+
+# 方式 2: 用 Chrome / 浏览器
+open output/poster_*.svg     # macOS 默认打开 → 右键另存为 PNG / 截图
+
+# 方式 3: chromium headless
+chromium --headless --screenshot=poster.png --window-size=1080,1920 output/poster_*.svg
+```
+
+设计原则（来自 v2.4 brief）：3 秒看懂身份 + 6 个证据数字 · 避免 emoji（跨平台字体替换问题）· system-ui 字体 fallback · 数字必须有证据缺则降级。
 
 ## 数据来源
 
