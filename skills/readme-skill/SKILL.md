@@ -114,27 +114,31 @@ ls ~/.claude/todos/  | wc -l
 
 ### 2.4b Skill 清单（AI 基础设施采集）
 
-对每个 skill 目录，读取 `SKILL.md` 的 frontmatter（name + description）：
+For each `~/.claude/skills/*/SKILL.md` and `~/.codex/skills/*/SKILL.md`,
+**use the `Read` tool to inspect the frontmatter** (top of file, between `---` markers). Extract `name` and the full `description` as YAML semantics dictate.
+
+Support all four YAML scalar styles：
+
+| 写法 | 处理 |
+| --- | --- |
+| 单行: `description: foo bar` | 直接取冒号后内容 |
+| 引号: `description: "foo bar"` 或 `'foo bar'` | 去掉首尾引号 |
+| `>` folded（多行折叠） | join indented continuation lines with spaces |
+| `\|` literal（多行保留） | preserve line breaks |
+
+停止条件：遇到下一个**未缩进的 frontmatter key**（行首无空格且形如 `key:`），或遇到关闭的 `---` 行。如果 `description` 字段缺失，回落到 `<目录名> (no description)`。
+
+**绝不使用 `head \| grep`** —— 那会把 `>`/`\|` 多行风格静默截断到只剩 `>`，这是 v2.2 之前的真实 bug。务必 `Read` 完整 frontmatter 后按 YAML 语义解析。
+
+枚举候选 skill 目录：
 
 ```bash
-for d in ~/.claude/skills/*/; do
-  name=$(basename "$d")
-  desc=$(head -10 "$d"SKILL.md 2>/dev/null | grep -m1 'description:' | sed 's/.*description: *//')
-  echo "$name | $desc"
-done
+ls -d ~/.claude/skills/*/ ~/.codex/skills/*/ 2>/dev/null
 ```
 
-同样处理 Codex skills：
-```bash
-for d in ~/.codex/skills/*/; do
-  name=$(basename "$d")
-  desc=$(head -10 "$d"SKILL.md 2>/dev/null | grep -m1 'description:' | sed 's/.*description: *//')
-  echo "$name | $desc"
-done
-```
+然后对每个目录：`Read` 它的 `SKILL.md` 头部 ~30 行 → 按上表解析 YAML → 输出 `<source>|<name>|<full_description>`。
 
-记录每个 skill 是「自建」还是「安装」。如果 skill 目录下有 git remote 指向用户自己的 repo，
-标记为自建；否则标记为安装。
+记录每个 skill 是「自建」还是「安装」。如果 skill 目录下有 git remote 指向用户自己的 repo，标记为自建；否则标记为安装。
 
 ### 2.5 配置深度
 
