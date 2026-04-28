@@ -707,6 +707,62 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ---
 
+## Step 8b — 海报渲染（v2.4 新增 · 可选）
+
+如果用户说"生成海报" / "AI 海报" / "social card" / "可分享图" / "make poster"，或默认就把它当一份附加交付物，在 markdown profile 完成后再渲染一份 SVG 海报到 `output/poster_<YYYYMMDD>.svg`。
+
+### 设计原则（来自 v2.4 brief，由 Codex 审校）
+
+1. **3 秒看懂身份 + 6 个可信数字** —— 视觉冲击不靠堆渐变，靠选对 6 个英雄数字。读者扫一眼就知道你是谁、做了什么
+2. **避免 emoji** —— 跨平台字体不一致；emoji 在 svg 里渲染常变方块或被字体替换
+3. **字体用 system-ui fallback** —— 用 `font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"`，不内嵌字体
+4. **hero 数字必须有证据** —— 全部来自前面 10 维度的已算量，缺数据降级显示 `—`，**不补想象指标**
+5. **SVG 是源图，不是社媒直发** —— 在 README / 终端总结里同步给出 PNG 转换命令
+
+### 标准布局（1080×1920 竖屏）
+
+| 区域 | y 位置 | 内容 |
+| --- | ---: | --- |
+| 顶部品牌条 | 120 | 6px 渐变小条（accent） |
+| 一句叙事标题 | 200–345 | 标签 + 大字标题 + 时间跨度副标题 |
+| 6 hero metric 卡 (2×3) | 440–1140 | 每张卡 465×220 圆角，数字 100-120px，标签 20px letter-spaced |
+| Evolution timeline | 1240–1430 | 横向 4 milestone（圆点 + 月份 + 事件） |
+| 副信息卡（左右两栏） | 1500–1720 | Cache leverage 排行 / Top slash 命令 |
+| 底部 footer | 1790–1825 | 脱敏标识 + repo URL + 日期 |
+
+### 6 个 hero 数字推荐（按显眼度排序）
+
+| 卡 | 数据来源（从 10 维度取） |
+| --- | --- |
+| 1 | `<span_days> · <active_days> ACTIVE`（一览） |
+| 2 | `<git_total_commits> LOCAL COMMITS`（Velocity） |
+| 3 | `<total_through>` TOKENS THROUGH（Token 经济学，spent + cache_read 总量） |
+| 4 | `1 : <cache_leverage> CACHE LEVERAGE`（Token 经济学） |
+| 5 | `<total_stars> GITHUB STARS`（投入产出） |
+| 6 | `<n_repos> · <n_langs> REPOS · LANGS`（Velocity） |
+
+任一项缺数据时，替换为：总 sessions（`<claude_sessions> + <codex_threads>`）/ 自建 skills 数 / 单日峰值消息数。
+
+### 副信息卡（左右两栏）
+- 左：Cache leverage 排行（top 3 模型，从 Token 经济学）
+- 右：Top slash 命令（top 3，从协作风格）
+
+### 颜色方案
+- 背景渐变：深紫 `#0c0a1f` → 中紫 `#1a1442` → 深绿 `#0d2e1f`
+- 强调渐变：Claude 紫 `#8b5cf6` → Codex 绿 `#10b981`
+- 文字层次：纯白 / 50% 透明度 / 25% 透明度（建立视觉重要性）
+
+### 实现细节
+- 用纯 SVG 文本字符串（无外部资源、无嵌入字体、无 base64 图片）
+- `<linearGradient>` 定义在 `<defs>`，`fill="url(#bg)"` 引用
+- 卡片用 `<rect rx="20">` 圆角；分隔线用 `<line stroke-opacity="0.1">`
+- letter-spacing 在英文标签上加 2-6px 提升设计感
+
+### 参考样板
+`examples/example_poster.svg` —— 1080×1920 竖屏，10 维度的脱敏 demo，可直接抄结构。
+
+---
+
 ## Step 9 — 输出与交接
 
 把 Markdown 写入 `output/profile_<YYYYMMDD>.md`，
@@ -714,8 +770,12 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ```
 ✅ Profile generated: output/profile_<YYYYMMDD>.md
+🎨 Poster:    output/poster_<YYYYMMDD>.svg  (如果生成了)
 关键数字：<sessions> sessions / <tokens> tokens / <github_commits> commits
 预览：head -40 output/profile_<YYYYMMDD>.md
+预览海报：open output/poster_<YYYYMMDD>.svg
+转 PNG：rsvg-convert -h 1920 output/poster_<YYYYMMDD>.svg > poster.png
+       (或 chromium --headless --screenshot=poster.png poster.svg)
 ```
 
 如果用户要求"私人版"，再生成一份 `output/profile_<YYYYMMDD>_private.md`
