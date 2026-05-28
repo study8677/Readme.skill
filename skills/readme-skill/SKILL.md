@@ -2,12 +2,14 @@
 name: readme-skill
 description: >
   生成一份对外可分享、脱敏的 AI-Native 开发者 README。
-  量化展示我对 Claude Code + Codex CLI + Kiro (AWS) + Trae (ByteDance)
-  的使用深度、AI 协作风格、项目与领域分布、兴趣主题，以及与 GitHub 提交的产出关联。
+  量化展示我对 Claude Code + Codex CLI + Kiro (AWS) + Trae (ByteDance) +
+  Gemini Antigravity (Google) 的使用深度、AI 协作风格、项目与领域分布、
+  兴趣主题，以及与 GitHub 提交的产出关联。
   Trigger when the user says: "生成我的 AI 档案" / "做一份 AI-native README" /
-  "分析我的 Claude / Codex / Kiro / Trae 使用情况" / "总结我的 AI 使用" /
-  "build my AI usage profile" / "summarize my Claude / Codex / Kiro / Trae history"
-  / "生成开发者画像".
+  "分析我的 Claude / Codex / Kiro / Trae / Antigravity 使用情况" /
+  "总结我的 AI 使用" / "build my AI usage profile" /
+  "summarize my Claude / Codex / Kiro / Trae / Antigravity history" /
+  "生成开发者画像".
   全程本地、只读、默认匿名、不上传任何数据。
 license: MIT
 ---
@@ -519,6 +521,106 @@ done
 
 ---
 
+## Step 3d — 读取 Gemini Antigravity 数据 (`~/.gemini/antigravity/`)
+
+Antigravity is the third local AI tool source. Treat each
+`~/.gemini/antigravity/brain/<uuid>/` directory as one Antigravity task/session.
+Only count directories whose basename is a UUID; ignore non-task directories such
+as `tempmediaStorage`.
+
+**Only read local text data**:
+- `*.metadata.json` for artifact metadata and summaries
+- `task.md`, `implementation_plan.md`, `walkthrough.md`
+- text variants ending in `.resolved`, `.resolved.0`, `.resolved.1`, etc.
+
+**Never read for analytics**:
+- screenshots or images (`*.png`, `*.webp`, `*.jpg`, `*.jpeg`)
+- `~/.gemini/antigravity/annotations/*.pbtxt`
+- `~/.config/Antigravity/*` browser/cache data
+- browser profiles or cache directories
+
+```bash
+AG_BRAIN="$HOME/.gemini/antigravity/brain"
+AG_UUID_RE='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
+# Count Antigravity task/session directories; exclude temp/media helper dirs
+find "$AG_BRAIN" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+  | grep -E "/$AG_UUID_RE$" | wc -l
+
+# Artifact type breakdown from metadata in task/session directories
+find "$AG_BRAIN" -mindepth 2 -maxdepth 2 -name '*.metadata.json' -type f 2>/dev/null \
+  | grep -E "/$AG_UUID_RE/[^/]+\.metadata\.json$" \
+  | xargs -r jq -r '.artifactType // "unknown"' | sort | uniq -c | sort -rn
+
+# Activity by day from metadata updatedAt
+find "$AG_BRAIN" -mindepth 2 -maxdepth 2 -name '*.metadata.json' -type f 2>/dev/null \
+  | grep -E "/$AG_UUID_RE/[^/]+\.metadata\.json$" \
+  | xargs -r jq -r '.updatedAt // empty' \
+  | cut -c1-10 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' \
+  | sort | uniq -c
+
+# Monthly activity for Evolution curve
+find "$AG_BRAIN" -mindepth 2 -maxdepth 2 -name '*.metadata.json' -type f 2>/dev/null \
+  | grep -E "/$AG_UUID_RE/[^/]+\.metadata\.json$" \
+  | xargs -r jq -r '.updatedAt // empty' \
+  | cut -c1-7 | grep -E '^[0-9]{4}-[0-9]{2}$' \
+  | sort | uniq -c
+
+# Summaries for topic extraction; do not quote full text in the README
+find "$AG_BRAIN" -mindepth 2 -maxdepth 2 -name '*.metadata.json' -type f 2>/dev/null \
+  | grep -E "/$AG_UUID_RE/[^/]+\.metadata\.json$" \
+  | xargs -r jq -r '.summary // empty' | head -200
+
+# Markdown headings for topic extraction
+find "$AG_BRAIN" -mindepth 2 -maxdepth 2 -type f \
+  \( -name 'task.md' -o -name 'implementation_plan.md' -o -name 'walkthrough.md' \
+     -o -name 'task.md.resolved*' -o -name 'implementation_plan.md.resolved*' \
+     -o -name 'walkthrough.md.resolved*' \) 2>/dev/null \
+  | grep -E "/$AG_UUID_RE/[^/]+$" \
+  | xargs -r grep -hE '^#{1,3} ' | head -200
+
+# Checkbox volume, useful for task/planning depth
+find "$AG_BRAIN" -mindepth 2 -maxdepth 2 -type f \
+  \( -name 'task.md' -o -name 'implementation_plan.md' -o -name 'walkthrough.md' \
+     -o -name 'task.md.resolved*' -o -name 'implementation_plan.md.resolved*' \
+     -o -name 'walkthrough.md.resolved*' \) 2>/dev/null \
+  | grep -E "/$AG_UUID_RE/[^/]+$" \
+  | xargs -r grep -hE '^- \[[ xX/-]\]' | wc -l
+
+# Antigravity text artifact scale. This is NOT billing usage and MUST NOT be
+# merged into Claude/Codex token totals.
+find "$AG_BRAIN" -mindepth 2 -maxdepth 2 -type f \
+  \( -name 'task.md' -o -name 'implementation_plan.md' -o -name 'walkthrough.md' \
+     -o -name 'task.md.resolved*' -o -name 'implementation_plan.md.resolved*' \
+     -o -name 'walkthrough.md.resolved*' \) 2>/dev/null \
+  | grep -E "/$AG_UUID_RE/[^/]+$" \
+  | xargs -r wc -l -m \
+  | awk '
+      $NF != "total" { files++; lines += $1; chars += $2 }
+      END {
+        printf "antigravity_text_files=%d\n", files + 0
+        printf "antigravity_text_lines=%d\n", lines + 0
+        printf "antigravity_text_chars=%d\n", chars + 0
+        printf "antigravity_estimated_token_equivalent=%d\n", int(chars / 4 + 0.5)
+      }'
+```
+
+Compute:
+- `antigravity_tasks` = count of `brain/<uuid>/` directories.
+- `antigravity_artifacts_by_type` = counts by `artifactType`.
+- `antigravity_active_days` = unique dates from valid `updatedAt` values.
+- `antigravity_first_active` / `antigravity_last_active` = min/max valid `updatedAt` dates.
+- `antigravity_monthly_activity` = monthly counts from valid `updatedAt` values.
+- `antigravity_topics` = metadata summaries + markdown headings + checkbox section labels, used only for keywords and high-level themes.
+- `antigravity_text_files` = count of eligible Antigravity text artifact files.
+- `antigravity_text_chars` = total character count across eligible Antigravity text artifacts.
+- `antigravity_text_lines` = total line count across eligible Antigravity text artifacts.
+- `antigravity_estimated_token_equivalent = round(antigravity_text_chars / 4)` as a rough text-scale proxy only.
+
+Antigravity data does not expose verified billing token counts. Use `—` in token columns or omit token metrics for Antigravity. If reporting `antigravity_estimated_token_equivalent`, label it exactly as **estimated token-equivalent (non-billing)** and keep it outside all real token totals, token economics tables, and billing/paid-token claims.
+
+---
+
 ## Step 4 — GitHub (via `gh`)
 
 ```bash
@@ -610,15 +712,20 @@ Aggregate:
 ### 6.1 一览
 - 总活跃天数 = unique union of all dates from
   `dailyActivity` (Claude) + Codex `by_date` + Claude `history by_date`
-  + Kiro `by_date` (3b.1) + Trae 工作区最后访问日期（如果能从
-  `workspace.json` 或 `state.vscdb` 的 mtime 推断；推不出就只用前三者）
+  + Kiro `by_date` (3b.1) + `antigravity_active_days` (3d) + Trae 工作区
+  最后访问日期（如果能从 `workspace.json` 或 `state.vscdb` 的 mtime 推断；
+  推不出就略过 Trae 一项）
 - 跨度 = `min..max` of those dates
 - 总 sessions / 总消息 / **claude_spent**（Σ input+output+cache_creation）
   / **claude_cache_read** / 总 codex threads / **codex_tokens** /
   **kiro_sessions** / **kiro_tokens**（如果 3b.1 拿到了）/
-  **trae_workspaces**（这些数字必须出现在「一览」里，缺失项显示 `—`，不要省略行）
+  **trae_workspaces** / **antigravity_tasks**（Antigravity task/session 数）
+  —— 这些数字必须出现在「一览」里，缺失项显示 `—`，不要省略行
 - 同期 GitHub: commits, PRs, issues, calendar_total
 - 本地 git: commits / +additions / −deletions / repos
+
+If available, include `antigravity_text_files`, `antigravity_text_chars`, `antigravity_text_lines`, and `antigravity_estimated_token_equivalent` as an Antigravity artifact scale note, not as real token usage.
+
 - **Velocity 指标**（v2.0 新增）:
   - `commits_per_day = git_local_commits / active_days`
   - `loc_churn_per_day = (additions + deletions) / active_days`
@@ -626,13 +733,18 @@ Aggregate:
   - `cross_stack_langs = count of distinct primary languages across repos`
 
 ### 6.2 AI-Native 实践（核心章节）
-- **多模型编排**: 列出每个模型的 spent / cache_read tokens。
-  把 **Kiro CLI 的 model breakdown（3b.1）合并进同一张表**（如果 schema
-  有 model 列）；**Trae 的 token 数据本地不可读**，在表中标注「Trae: 云端 only」。
-  **总编排维度** = 同时活跃使用的 AI 工具数（Claude / Codex / Kiro / Trae 四选 N）。
-  用过 ≥ 3 个工具 → 报告里强调「多引擎编排者」叙事。
+- **多工具 / 多模型编排**: 列出每个模型的 spent / cache_read tokens。
+  - **Claude / Codex / Kiro** model breakdown 合并到同一张 token 表（Kiro
+    schema 有 model 列时按 3b.1 抽取）。
+  - **Trae** 的 token 数据本地不可读，在表中标注「Trae: 云端 only」。
+  - **Gemini Antigravity** 的 tasks/artifacts 单列展示，token 不可得时显示
+    `—`，不要估算。
+  - **总编排维度** = 同时活跃使用的 AI 工具数（Claude / Codex / Kiro / Trae /
+    Antigravity 五选 N）。用过 ≥ 3 个工具 → 报告里强调「多引擎编排者」叙事。
 - **高级能力使用**: plan-mode 次数、effort 调节次数、skill 调用次数、
   自研 skills 数、hooks/MCP 数、plans/tasks 数、automations 数
+- **Antigravity 任务制协作**: `antigravity_tasks`、artifact type breakdown、
+  walkthrough / implementation_plan / task artifacts，用来描述「从任务 → 计划 → walkthrough」的交付闭环。
 - **Prompt caching 熟练度**: cache_to_spent_ratio
 - **Reasoning effort 分布**: xhigh/high/medium/low 占比
 - **AI 基础设施层**（v2.0 新增 —— 这是最 AI-native 的信号）:
@@ -659,19 +771,27 @@ Aggregate:
 
 ### 6.4 项目与领域
 - 合并维度: each project key (real_cwd) accumulates
-  `claude_sessions` + `codex_threads` + `kiro_sessions` (Step 3b.2)
-  + `trae_workspace_hit` (0/1，Step 3c.1) + `git_commits` + `git_lines`
-- 综合分数 = `claude_sessions*5 + codex_threads*4 + kiro_sessions*4
-  + trae_workspace_hit*2 + git_commits`
+  `claude_sessions` + `codex_threads` + `kiro_sessions` (Step 3b.2) +
+  `trae_workspace_hit` (0/1，Step 3c.1) + `antigravity_tasks` (Step 3d) +
+  `git_commits` + `git_lines`
+- Antigravity 没有可靠 cwd 时，用 metadata summary / markdown headings 提取
+  topic key；能匹配到已有项目 basename 时并入该项目，否则作为 Antigravity
+  topic bucket。
+- 综合分数 = `claude_sessions*5 + codex_threads*4 + kiro_sessions*4 +
+  trae_workspace_hit*2 + antigravity_tasks*4 + git_commits`
 - 排序取 Top 12，匿名化为 "项目 A/B/C..."（按分数顺序）
-- **多工具编排模式**（v2.5 升级）：对每个 Top 12 项目，按四种工具的活跃度分类：
+- **多工具编排模式**（v2.5 升级 —— Claude + Codex + Kiro + Trae + Antigravity）：
+  对每个 Top 12 项目 / topic，按五种工具的活跃度分类：
   - 计算 `tools_used = ['claude' if claude_sessions>0, 'codex' if codex_threads>0,
-    'kiro' if kiro_sessions>0, 'trae' if trae_workspace_hit>0]`
-  - 当只有 1 个工具：标 「`<tool>` 主导」
+    'kiro' if kiro_sessions>0, 'trae' if trae_workspace_hit>0,
+    'antigravity' if antigravity_tasks>0]`
+  - `total_ai_units = claude_sessions + codex_threads + kiro_sessions +
+    trae_workspace_hit + antigravity_tasks`
+  - 当只有 1 个工具：标「`<tool>` 主导」
   - 2 个工具：标「双引擎（`<A>+<B>`）」
   - 3 个及以上：标「多引擎（`<A>+<B>+<C>...`）」
   - 在项目表中新增「编排模式」列
-  - 汇总：多引擎项目数 / 双引擎项目数 / 单工具项目数
+  - 汇总：多引擎项目数 / 双引擎项目数 / 单工具项目数 + 每种主导项目数
   - 如果某个项目有 `.kiro/` 或 `.trae/` workspace 配置（3b.5 / 3c.4），
     在「编排模式」末尾加 `[K]` 或 `[T]` 角标
 - 用证据打分给每个项目打**领域标签**，不要只按第一命中关键词硬归类：
@@ -701,6 +821,7 @@ Aggregate:
 ### 6.5 兴趣主题 & 关键词
 
 **Corpus**: 拼接 plan titles + Codex thread titles + first_user_messages
++ Antigravity metadata summaries + Antigravity markdown headings
 + 部分 history.text。
 
 **Tokenize**:
@@ -722,8 +843,10 @@ make, get, just, also, will, would, can.
 
 ### 6.6 节奏
 - **24h 热力**: 合并 `hourCounts` (claude) + codex `by_hour` + history `by_hour`
-  + kiro `by_hour` (3b.1) — Trae 本地无时间戳粒度，不并入
-- **活跃天数**: union of dates；连续活跃 streak = 最长连续 1 天间隔的串
+  + kiro `by_hour` (3b.1) + Antigravity `updatedAt` hour (3d) — Trae 本地无
+  时间戳粒度，不并入
+- **活跃天数**: union of Claude / Codex / Kiro / Antigravity dates；连续活跃
+  streak = 最长连续 1 天间隔的串
 - **峰值日**: max 的 dailyActivity.messageCount
 - **首次/最近**: min/max date
 
@@ -761,6 +884,7 @@ make, get, just, also, will, would, can.
 - Codex `threads` 的 `created_at` + `model` + `cli_version`
 - Claude `history.jsonl` 的 `timestamp` + `display`（斜杠命令）
 - Claude `projects/` 目录的 JSONL 文件创建时间
+- Antigravity metadata `updatedAt` + `artifactType` + summaries
 
 计算：
 1. **月度活跃量**：每月 Claude sessions + Codex threads
@@ -787,6 +911,9 @@ make, get, just, also, will, would, can.
 数据来源：
 - Claude `stats-cache.json` 的 `modelUsage` + `dailyModelTokens`
 - Codex sqlite `threads` 的 `tokens_used` + 月度聚合（Step 3.1 已查）
+- Antigravity contributes activity and workflow metrics only; exclude it from token economics unless a verified token field exists in allowed local text data.
+
+Antigravity `estimated token-equivalent (non-billing)` is a text-scale proxy from local artifacts. Do not add it to `claude_tokens_spent`, `claude_cache_read`, `codex_tokens`, total token-through, cache leverage, paid/new token totals, or per-model token tables. It may appear only in an Antigravity/local-artifact subsection or a clearly labeled footnote.
 
 计算：
 1. **总投入** = `claude_spent + codex_tokens`（新付费 token 总量）
@@ -850,19 +977,19 @@ the structure below. Technical terms stay in English in both versions. **讲故�
 
 ```markdown
 # <name or github_login> · AI-Native Developer Profile
-> 基于 <span_days> 天的本地 Claude Code + Codex 对话数据自动生成 · <generated_at>
+> 基于 <span_days> 天的本地 Claude Code + Codex + Antigravity 数据自动生成 · <generated_at>
 > _个人理念：<github bio if available>_
 
 ---
 
 ## 一览
 
-- 在 **<span_days>** 天里完成 **<claude_sessions>** 次 Claude sessions + **<codex_threads>** 次 Codex threads，共 **<total_messages>** 条消息
+- 在 **<span_days>** 天里完成 **<claude_sessions>** 次 Claude sessions + **<codex_threads>** 次 Codex threads + **<antigravity_tasks>** 次 Antigravity tasks，共 **<total_messages>** 条 Claude/Codex 消息
 - 日均产出：**<commits_per_day>** commits / **<loc_churn_per_day>** 行代码变动 / **<github_contribs_per_day>** GitHub contributions
 - 同时维护 **<git_repos>** 个仓库，横跨 **<cross_stack_langs>** 门语言
 - 同期 GitHub：**<github_commits>** commits / **<github_prs>** PRs / **<github_issues>** issues / **<calendar_total>** 总贡献
 - AI 投入：**<claude_spent>** Claude 新付费 token + **<codex_tokens>** Codex token；复用 **<claude_cache_read>** 缓存（占 Claude I/O **<cache_pct>%**）
-- 主力工具：Claude Code (Opus 4.6 + Sonnet 4.6) + Codex CLI (GPT-5.4)
+- 主力工具：Claude Code (Opus / Sonnet) + Codex CLI (GPT) + Gemini Antigravity
 
 ## 🚀 Velocity & Leverage — AI 让一个人拥有了小团队的交付能力
 
@@ -882,11 +1009,11 @@ the structure below. Technical terms stay in English in both versions. **讲故�
 > 不是「偶尔问问 AI」，是把多 LLM 编排、planning、structured workflows 都跑通。
 
 ### 多模型编排
-| 模型 | sessions / threads | spent tokens | cache-read | 用途倾向 |
+| 工具 / 模型 | sessions / threads / tasks | spent tokens | cache-read | 用途倾向 |
 | --- | ---: | ---: | ---: | --- |
-| Claude Opus 4.6 | … | … | … | 深度推理、复杂规划 |
-| Claude Sonnet 4.6 | … | … | … | 快速迭代、批量任务 |
-| GPT-5.4 (Codex) | … | … | — | 第二意见、跨工具诊断 |
+| Claude Opus / Sonnet | … | … | … | 深度推理、复杂规划、代码修改 |
+| GPT (Codex CLI) | … | … | — | 第二意见、跨工具诊断、命令行实现 |
+| Gemini Antigravity | <antigravity_tasks> | — | — | 任务制规划、walkthrough、UI/实现闭环 |
 | … | | | | |
 
 ### 高级能力深度使用
@@ -895,6 +1022,7 @@ the structure below. Technical terms stay in English in both versions. **讲故�
 - **Skills**: 共 **<n>** 个（Claude <n> + Codex <m>）
 - **Plans**: **<n>** 份；Tasks: **<n>** 个
 - **Hooks**: **<n>** 个；Automations: **<n>** 个
+- **Antigravity**: **<antigravity_tasks>** tasks；Artifacts: <artifact_type_breakdown>
 
 ### Prompt caching 熟练度
 每花费 1 个新 token，复用 **<ratio>** 个缓存 token（cache-read 占总 IO 的 **<%>**）。
@@ -949,13 +1077,13 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 | … | … | … |
 
 ### Top 项目（脱敏）
-| 项目 | Claude | Codex | Git commits | 编排模式 | 领域 |
-| --- | ---: | ---: | ---: | --- | --- |
-| 项目 A | <n> | <n> | <n> | 双引擎 | … |
-| 项目 B | <n> | <n> | <n> | Codex 主导 | … |
-| … | | | | | |
+| 项目 | Claude | Codex | Antigravity | Git commits | 编排模式 | 领域 |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| 项目 A | <n> | <n> | <n> | <n> | 三引擎 | … |
+| 项目 B | <n> | <n> | <n> | <n> | Antigravity 主导 | … |
+| … | | | | | | |
 
-编排模式统计：双引擎 **<n>** 个 · Claude 主导 **<n>** 个 · Codex 主导 **<n>** 个
+编排模式统计：三引擎 **<n>** 个 · 双引擎 **<n>** 个 · Claude 主导 **<n>** 个 · Codex 主导 **<n>** 个 · Antigravity 主导 **<n>** 个
 
 ## 🧬 Evolution 曲线 — AI 用法在进化
 
@@ -967,9 +1095,9 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 ```
 
 月度活跃趋势：
-| 月份 | Claude sessions | Codex threads | 里程碑 |
-| --- | ---: | ---: | --- |
-| … | | | |
+| 月份 | Claude sessions | Codex threads | Antigravity tasks | 里程碑 |
+| --- | ---: | ---: | ---: | --- |
+| … | | | | |
 
 ## 💡 兴趣主题 & 关键词
 
@@ -1034,13 +1162,17 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 - 数据 100% 本地：`~/.claude/*` + 项目 `.claude/plans`（如配置）+ `~/.codex/*`
   + `~/.kiro/*` + `~/.local/share/kiro-cli/*` + `~/Library/Application Support/Trae/*`
-  + 项目 `.kiro/`、`.trae/` + 本地 `git log` + GitHub via `gh`
+  + `~/.gemini/antigravity/brain/*` + 项目 `.kiro/`、`.trae/` + 本地 `git log`
+  + GitHub via `gh`
 - Claude plans 同时覆盖默认 `~/.claude/plans` 与 settings 中解析出的 `plansDirectory`
-- Kiro / Trae 数据自动检测，未安装的工具静默跳过；Trae 的 token 用量由
-  ByteDance 云端 API 持有，本 skill 不联网，本节默认缺失
-- 对话正文仅用于关键词与协作风格分析，原文不会出现在报告中
+- Kiro / Trae / Antigravity 数据自动检测，未安装的工具静默跳过；Trae 的 token
+  用量由 ByteDance 云端 API 持有，本 skill 不联网，本节默认缺失
+- 对话正文仅用于关键词与协作风格分析，原文不会出现在报告中；Antigravity 只
+  读取 metadata summary 与 markdown headings/checkbox，不读取截图、浏览器
+  cache 或 pbtxt annotations
 - 项目名已匿名，API key / token / 邮箱 已正则清洗
-- 报告由 Claude Code / Codex / Kiro / Trae 按 Readme.skill 自动生成，可重复运行
+- 报告由 Claude Code / Codex / Kiro / Trae / Antigravity 本地数据按
+  Readme.skill 自动生成，可重复运行
 - 生成时间: **<ISO timestamp>**
 ```
 
@@ -1080,7 +1212,7 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 | 5 | `<total_stars> GITHUB STARS`（投入产出） |
 | 6 | `<n_repos> · <n_langs> REPOS · LANGS`（Velocity） |
 
-任一项缺数据时，替换为：总 sessions（`<claude_sessions> + <codex_threads>`）/ 自建 skills 数 / 单日峰值消息数。
+任一项缺数据时，替换为：总 AI units（`<claude_sessions> + <codex_threads> + <antigravity_tasks>`）/ 自建 skills 数 / Antigravity artifacts 数 / 单日峰值消息数。
 
 ### 副信息卡（左右两栏）
 - 左：Cache leverage 排行（top 3 模型，从 Token 经济学）
@@ -1174,11 +1306,13 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 | 徽章 | 触发条件 | 显示文本 |
 | --- | --- | --- |
 | TWO-ENGINE PILOT | Claude sessions ≥ 50 且 Codex threads ≥ 50 | `TWO-ENGINE PILOT` |
+| THREE-ENGINE PILOT | Claude sessions ≥ 50 且 Codex threads ≥ 50 且 Antigravity tasks ≥ 20 | `THREE-ENGINE PILOT` |
 | CACHE MASTER | claude_cache_leverage ≥ 15× | `CACHE MASTER · <leverage>×` |
 | SKILL BUILDER | 自建 skills + automations + rules ≥ 5 | `SKILL BUILDER · <n>` |
 | POLYGLOT | 跨栈语言 ≥ 5 | `POLYGLOT · <n>` |
 | VELOCITY KING | 日均 commits ≥ 8 | `VELOCITY KING · <n>/d` |
 | PLAN-FIRST | session-first 是 `/plan` 的占比 ≥ 8% | `PLAN-FIRST · <%>` |
+| WALKTHROUGH BUILDER | Antigravity walkthrough artifacts ≥ 10 | `WALKTHROUGH BUILDER · <n>` |
 | TOKEN WHALE | total_through ≥ 10B | `TOKEN WHALE · <total>` |
 | OPEN-SOURCE | total stars ≥ 1000 | `OPEN-SOURCE · <stars>★` |
 | EARLY ADOPTER | 使用过 ≥ 3 个不同模型版本 | `EARLY ADOPTER` |
@@ -1218,7 +1352,7 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 ```
 ✅ Profile generated: output/profile_<YYYYMMDD>.md  (或 output/profile_<YYYYMMDD>_en.md)
 🎨 Poster:    output/poster_<YYYYMMDD>_<lang>.svg  (如果生成了)
-关键数字：<sessions> sessions / <tokens> tokens / <github_commits> commits
+关键数字：<claude_sessions> Claude sessions / <codex_threads> Codex threads / <antigravity_tasks> Antigravity tasks / <tokens> tokens / <github_commits> commits
 预览：head -40 <profile_path>
 预览海报：open output/poster_<YYYYMMDD>_<lang>.svg
 转 PNG：rsvg-convert -h 1920 output/poster_<YYYYMMDD>_<lang>.svg > poster.png
@@ -1242,6 +1376,10 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 | `~/Library/Application Support/Trae/` 不存在 | 完全跳过 Step 3c |
 | Trae `state.vscdb` 的 chat key 解析失败 | 仅展示「打开过的工作区数 + `.trae/` 配置数」，不编 session/message 数字 |
 | Trae token 数据（永远缺失，云端 only） | 报告里明写「Trae token 在云端，本 skill 不联网」；除非用户手动提供 tokscale 导出 |
+| `~/.gemini/antigravity/brain` 不存在 | 跳过 Step 3d；总览和项目表不显示 Antigravity 列或显示 0 |
+| Antigravity metadata 缺失 | 用 markdown 文件名、标题和文件 mtime 降级；count-based metrics 保留，date-based metrics 跳过无效记录 |
+| Antigravity 只有截图/二进制 | 只计 brain 目录为 task/session，不读取图片，不做 OCR，不编 topic |
+| Antigravity token 不可得 | token 表显示 `—` 或省略 Antigravity token；不要估算 |
 | `gh` 未安装 / 未认证 | 跳过 GitHub 章节，profile 仍可生成 |
 | 候选路径不是 git 仓库 | 该项目从 git 统计中跳过 |
 | 数据全空 | 报告诚实地说明"暂无可统计的本地数据"，不要编数据 |
@@ -1249,14 +1387,18 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 ## 一些务必遵守的红线
 
 - 可以读取 `~/.claude/projects/*/<id>.jsonl`、`~/.kiro/sessions/cli/*.jsonl`、
-  Trae `state.vscdb` 的 chat 字段用于关键词提取、协作风格、Session 架构等深度分析
-  （Step 6.3 / 6.5 受益）；但**不要把任何对话原文一字不差地写进 README**——
-  脱敏后的统计、概括、片段化关键词可以
+  Trae `state.vscdb` 的 chat 字段、Antigravity `brain/<uuid>/*.metadata.json`
+  与 markdown 文本，用于关键词提取、协作风格、Session 架构等深度分析（Step
+  6.3 / 6.5 受益）；但**不要把任何对话原文一字不差地写进 README**——脱敏后的
+  统计、概括、片段化关键词可以
 - **永远不要** 联网（除 `gh` 调用 GitHub 自身）。这意味着 Trae 的云端 token API
   永远不可调用；如需 Trae token，仅读取用户自己 tokscale 缓存
 - **永远不要** 修改 `~/.claude`、`~/.codex`、`~/.kiro`、`~/.local/share/kiro-cli`、
-  `~/Library/Application Support/Trae` 下任何文件。所有 SQLite 必须
-  `mode=ro&immutable=1` 打开
+  `~/Library/Application Support/Trae`、`~/.gemini/antigravity` 下任何文件。
+  所有 SQLite 必须 `mode=ro&immutable=1` 打开
+- Antigravity 只允许读取 `~/.gemini/antigravity/brain/*` 下的 metadata 与
+  markdown 文本；不要读取 screenshots、pbtxt annotations、`~/.config/Antigravity`
+  cache，且不要 OCR 图片
 - **永远不要** 写脚本替代本指令；本 skill 的本质就是让 agent 自己读、自己算、自己写
 
 ## 参考样板（外形上对标这些 skill）

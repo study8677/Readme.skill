@@ -4,7 +4,7 @@
 
 ### Turn your local AI coding history into a shareable developer card — in 30 seconds.
 
-Reads your real Claude Code / Codex CLI / Kiro (AWS) / Trae (ByteDance) usage data, generates a **shareable, redacted-by-default AI-Native developer profile** — a long-form report **and** a vertical poster you can post anywhere.
+Reads your real Claude Code / Codex CLI / Kiro (AWS) / Trae (ByteDance) / Gemini Antigravity (Google) usage data, generates a **shareable, redacted-by-default AI-Native developer profile** — a long-form report **and** a vertical poster you can post anywhere.
 
 [![Stars](https://img.shields.io/github/stars/study8677/Readme.skill?style=flat-square&logo=github&color=yellow)](https://github.com/study8677/Readme.skill/stargazers)
 [![Forks](https://img.shields.io/github/forks/study8677/Readme.skill?style=flat-square&logo=github&color=blue)](https://github.com/study8677/Readme.skill/network/members)
@@ -121,6 +121,7 @@ The AI runs the full pipeline and writes `output/profile_<date>_en.md` for Engli
 | **Codex CLI** | ✅ Full support | `~/.codex/state_5.sqlite` (read-only) + `history.jsonl` + skills + automations + rules |
 | **Kiro (AWS)** | ✅ v2.5 added | `~/.kiro/sessions/cli/*.{json,jsonl}` + `~/.local/share/kiro-cli/data.sqlite3` + `~/.kiro/{agents,skills,steering,prompts,settings}` |
 | **Trae (ByteDance)** | ⚠️ v2.5 partial | `~/Library/Application Support/Trae/User/{workspaceStorage,globalStorage}/state.vscdb` (chat metadata, read-only) + workspace `.trae/{rules,skills}`. **Token usage is held by cloud API; this skill stays offline, so token numbers will be missing by default.** |
+| **Gemini Antigravity (Google)** | ✅ v2.5 added (community PR [#1](https://github.com/study8677/Readme.skill/pull/1)) | `~/.gemini/antigravity/brain/<uuid>/`: per-task `*.metadata.json` + `task.md` / `implementation_plan.md` / `walkthrough.md`. **Tokens unavailable** — task/artifact counts + text-scale estimate (non-billing) only. |
 | **GitHub** | ✅ Public contributions | `gh api graphql` — 365-day contributions, top repos, languages |
 | **Local git** | ✅ Full support | Read-only `git log` in each project, counts commits / +- lines |
 

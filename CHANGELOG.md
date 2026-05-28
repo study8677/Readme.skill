@@ -11,8 +11,10 @@
 ### Added
 - **Kiro (AWS) 完整支持** — SKILL.md `Step 3b`：`~/.kiro/sessions/cli/*.{json,jsonl}` + `~/.local/share/kiro-cli/data.sqlite3` + `~/.kiro/{agents,skills,steering,prompts,settings}`。
 - **Trae (ByteDance) 部分支持** — SKILL.md `Step 3c`：`~/Library/Application Support/Trae/User/{workspaceStorage,globalStorage}/state.vscdb`（chat 元数据）+ 项目 `.trae/{rules,skills}`。**Trae token 用量走云端 API，本 skill 保持离线，token 数字默认缺失**。
-- **新触发词**：「分析我的 Kiro / Trae 使用情况」/ "summarize my Kiro / Trae history"。
-- **降级策略表**新增 Kiro / Trae 缺失时的处理。
+- **Gemini Antigravity (Google) 支持** — SKILL.md `Step 3d`，来自社区 PR [#1](https://github.com/study8677/Readme.skill/pull/1) by [@BaekElk19](https://github.com/BaekElk19)：`~/.gemini/antigravity/brain/<uuid>/` 每任务 metadata + `task.md` / `implementation_plan.md` / `walkthrough.md`。token 不可得时按 task/artifact 计数 + text-scale 估算（明确标注 non-billing）。
+- **新触发词**：「分析我的 Kiro / Trae / Antigravity 使用情况」/ "summarize my Kiro / Trae / Antigravity history"。
+- **多工具编排升级**：Step 6.4 综合分数与编排模式从「双引擎」扩展为「多引擎」，支持 Claude + Codex + Kiro + Trae + Antigravity 五选 N。
+- **降级策略表**新增 Kiro / Trae / Antigravity 缺失时的处理。
 - **GitHub Discussions** 开启，新增 `Show your profile` 引导。
 - **`.github/ISSUE_TEMPLATE`** YAML form：bug / feature / new-tool-support。
 - **CHANGELOG.md**（本文件）。

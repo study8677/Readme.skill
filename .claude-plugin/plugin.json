@@ -1,6 +1,6 @@
 {
   "name": "readme-skill",
-  "description": "Generate an AI-Native developer profile from local Claude Code + Codex CLI + Kiro (AWS) + Trae (ByteDance) data, GitHub contributions, and git log. Local-only, read-only, anonymized by default.",
+  "description": "Generate an AI-Native developer profile from local Claude Code + Codex CLI + Kiro (AWS) + Trae (ByteDance) + Gemini Antigravity (Google) data, GitHub contributions, and git log. Local-only, read-only, anonymized by default.",
   "version": "2.5.0",
   "author": {
     "name": "JingWen Fan",
