@@ -1,0 +1,39 @@
+name: 💡 Feature Request / 功能建议
+description: 提个新维度、新徽章、新海报样式、或者新交互模式 / Suggest a new dimension, badge, poster style, or interaction mode.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: pain
+    attributes:
+      label: 你在解决什么问题 / What problem are you solving
+      description: 「为什么」比「做什么」更重要 / "Why" matters more than "what"
+      placeholder: "我想在画像里看到 ... 因为 ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你建议怎么做 / Your proposal
+      description: SKILL.md 哪个 Step 加什么？海报里怎么呈现？/ Which SKILL.md step? What does it look like in the poster?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案 / Alternatives considered
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 范围 / Scope
+      options:
+        - label: Markdown profile (10 个维度的某一个 / one of the 10 dimensions)
+        - label: SVG poster (海报视觉 / poster visual)
+        - label: 新数据源 / New data source
+        - label: 触发词 / 交互 / Trigger phrase or interaction
+        - label: 文档 / 翻译 / Docs or translation

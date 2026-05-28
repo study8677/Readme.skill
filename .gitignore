@@ -1,2 +1,13 @@
 output/*
 !output/.gitkeep
+
+# Personal agent / broker config — contains private endpoint URLs and agent IDs
+AGENT.md
+AGENTS.md
+CLAUDE.md
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

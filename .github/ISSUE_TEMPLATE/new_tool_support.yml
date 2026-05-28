@@ -1,0 +1,75 @@
+name: 🌐 接入新 AI 工具 / Add support for a new AI tool
+description: 用 Kiro / Trae / Cursor / Cline / Aider / ... 等其他 AI 编程工具，希望也能生成画像 / Add support for an AI coding tool beyond Claude Code + Codex CLI.
+title: "[Tool Support] "
+labels: ["enhancement", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        谢谢推荐！只要工具的**本地数据可读 + 可解析**，原则上都能按 SKILL.md Step 2/3 的范式接入。
+        Thanks! Any tool whose **local data is readable + parseable** can be wired in following SKILL.md Step 2/3.
+
+  - type: input
+    id: tool_name
+    attributes:
+      label: 工具名 / Tool name
+      placeholder: "Kiro / Trae.ai / Cursor / Cline / Aider / ..."
+    validations:
+      required: true
+
+  - type: input
+    id: tool_url
+    attributes:
+      label: 官方网址 / Official URL
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: data_paths
+    attributes:
+      label: 本地数据存哪里 / Where does it store local data
+      description: |
+        例如 ~/.claude/stats-cache.json、~/.codex/state_5.sqlite
+        macOS / Linux / Windows 路径都列出来更好。
+      placeholder: |
+        macOS:   ~/Library/Application Support/Kiro/...
+        Linux:   ~/.config/kiro/...
+        Windows: %APPDATA%/Kiro/...
+    validations:
+      required: true
+
+  - type: textarea
+    id: data_format
+    attributes:
+      label: 数据格式 / Data format
+      description: jsonl / sqlite / json / 专有二进制？字段是什么样？ / jsonl / sqlite / json / proprietary? Field shape?
+      placeholder: "JSONL，每行 {session_id, ts, model, tokens_used, ...}"
+    validations:
+      required: true
+
+  - type: textarea
+    id: skill_system
+    attributes:
+      label: 是否有 skill / plugin / rule 体系 / Does it have a skill / plugin / rule system
+      placeholder: "有，目录 ~/.kiro/skills/，跟 ~/.claude/skills 类似"
+    validations:
+      required: false
+
+  - type: textarea
+    id: docs
+    attributes:
+      label: 相关文档 / Relevant docs
+      description: 官方文档、reverse-engineering 博客、GitHub repo
+      placeholder: "https://docs.example.com/storage-format"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: 你愿意帮忙吗 / Are you willing to help
+      options:
+        - label: 我可以提供测试数据（脱敏后）/ I can provide anonymized test data
+        - label: 我可以 PR SKILL.md 的新 Step / I can PR the new SKILL.md step
+        - label: 我只是建议，等作者实现 / Just suggesting, awaiting maintainer

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 跑出了好玩的画像？想分享？ / Share your generated profile
+    url: https://github.com/study8677/Readme.skill/discussions
+    about: 去 Discussions › Show your profile，会被收录到主页 Gallery / Post yours in Discussions for the homepage gallery.
+  - name: ❓ 安装 / 使用问题 / Install or usage question
+    url: https://github.com/study8677/Readme.skill/discussions/categories/q-a
+    about: 先去 Q&A 翻一下，常见问题已经回答过 / Q&A first — many install issues already answered.
+  - name: 🐧 中文社区 / Chinese community
+    url: https://linux.do/
+    about: 在 Linux Do 找作者和早期用户聊 / Chat with the author + early users on Linux Do.

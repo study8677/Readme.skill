@@ -1,0 +1,65 @@
+name: 🐛 Bug Report / Bug 报告
+description: 跑 skill 时报错、输出怪、或数据明显不对 / Skill errored, output looks broken, or numbers are clearly wrong.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢提报 bug！请尽量给到下面的信息，能帮助快速复现。
+        Thanks for reporting! The more detail below, the faster we can repro.
+
+  - type: input
+    id: env
+    attributes:
+      label: 环境 / Environment
+      description: OS + Claude Code / Codex CLI 版本 / OS + Claude Code or Codex CLI version
+      placeholder: "macOS 14.5 · Claude Code 0.X.Y · Codex CLI 0.81.0"
+    validations:
+      required: true
+
+  - type: input
+    id: skill_version
+    attributes:
+      label: Readme.skill 版本 / version
+      placeholder: "v2.4.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: 发生了什么 / What happened
+      description: 触发词 + 报错信息 / Trigger phrase + error message
+      placeholder: |
+        触发：「生成我的 AI 档案」
+        报错：sqlite3 ... not found
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为 / Expected
+      placeholder: "应该跳过 Codex 章节继续生成"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志 / Relevant logs
+      description: 粘贴报错或诊断输出 / Paste error output
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 检查清单 / Checklist
+      options:
+        - label: 我已经搜过现有 issues 和 Discussions / I searched existing issues + discussions
+          required: true
+        - label: 我已经移除了日志中的密钥 / 邮箱 / 真实路径 / I redacted secrets, emails, real paths from logs
+          required: true
