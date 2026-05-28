@@ -21,14 +21,14 @@
 ---
 
 <p align="center">
-  <a href="./examples/profile_20260515.md">
-    <img src="./examples/poster_20260515_zh.svg" width="540" alt="最新一次跑出的实测海报（脱敏）"/>
+  <a href="./examples/profile_20260528.md">
+    <img src="./examples/poster_20260528_zh.svg" width="540" alt="最新一次跑出的实测海报（脱敏）"/>
   </a>
 </p>
 
 <p align="center">
-  <em>↑ v2.4 在作者电脑上跑出的真实输出（149 天 · 19.4B token · 23.8× cache leverage · 1503★）。</em><br/>
-  <em>点击图片查看完整 <a href="./examples/profile_20260515.md">Markdown profile</a>。</em>
+  <em>↑ v2.5.1 在作者电脑上跑出的最新真实输出（148 天 · 22.21B token · 23.8× cache leverage · 2,217★ · 4 个 AI 工具并用）。</em><br/>
+  <em>点击图片查看完整 <a href="./examples/profile_20260528.md">中文 Markdown profile</a> · <a href="./examples/profile_20260528_en.md">English profile</a>。</em>
 </p>
 
 ---

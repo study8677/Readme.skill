@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0a1f"/>
+      <stop offset="55%" stop-color="#1a1442"/>
+      <stop offset="100%" stop-color="#0d2e1f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="cardStroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+  <rect x="60" y="118" width="960" height="6" rx="3" fill="url(#accent)"/>
+
+  <g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+    <g transform="translate(60 152)">
+      <rect x="0" y="0" width="225" height="58" rx="29" fill="none" stroke="url(#cardStroke)" stroke-width="1.5"/>
+      <text x="112.5" y="36" text-anchor="middle" fill="#ffffff" font-size="16" letter-spacing="1.5">TWO-ENGINE</text>
+      <rect x="245" y="0" width="225" height="58" rx="29" fill="none" stroke="url(#cardStroke)" stroke-width="1.5"/>
+      <text x="357.5" y="36" text-anchor="middle" fill="#ffffff" font-size="16" letter-spacing="1.5">CACHE 23.8x</text>
+      <rect x="490" y="0" width="225" height="58" rx="29" fill="none" stroke="url(#cardStroke)" stroke-width="1.5"/>
+      <text x="602.5" y="36" text-anchor="middle" fill="#ffffff" font-size="16" letter-spacing="1.5">TOKEN WHALE 22B</text>
+      <rect x="735" y="0" width="225" height="58" rx="29" fill="none" stroke="url(#cardStroke)" stroke-width="1.5"/>
+      <text x="847.5" y="36" text-anchor="middle" fill="#ffffff" font-size="16" letter-spacing="1.5">OPEN-SOURCE 2.2K</text>
+    </g>
+
+    <text x="60" y="280" fill="#ffffff" opacity="0.55" font-size="24" letter-spacing="4">AI-NATIVE DEVELOPER PROFILE</text>
+    <text x="60" y="353" fill="#ffffff" font-size="58" font-weight="800">148 天写下 156 亿字</text>
+    <text x="60" y="425" fill="url(#accent)" font-size="58" font-weight="800">约等于红楼梦 2.1 万遍</text>
+    <text x="60" y="480" fill="#ffffff" opacity="0.62" font-size="24" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">22.2B tokens · 23.8x cache · 17 skills · 7 langs</text>
+
+    <g filter="url(#softShadow)">
+      <g transform="translate(60 560)">
+        <rect width="465" height="218" rx="20" fill="#ffffff" fill-opacity="0.08" stroke="url(#cardStroke)" stroke-opacity="0.55"/>
+        <text x="34" y="64" fill="#ffffff" opacity="0.55" font-size="18" letter-spacing="4">ACTIVE DAYS</text>
+        <text x="34" y="158" fill="#ffffff" font-size="92" font-weight="850">148</text>
+      </g>
+      <g transform="translate(555 560)">
+        <rect width="465" height="218" rx="20" fill="#ffffff" fill-opacity="0.08" stroke="url(#cardStroke)" stroke-opacity="0.55"/>
+        <text x="34" y="64" fill="#ffffff" opacity="0.55" font-size="18" letter-spacing="4">LOCAL COMMITS</text>
+        <text x="34" y="158" fill="#ffffff" font-size="92" font-weight="850">4292</text>
+      </g>
+      <g transform="translate(60 810)">
+        <rect width="465" height="218" rx="20" fill="#ffffff" fill-opacity="0.08" stroke="url(#cardStroke)" stroke-opacity="0.55"/>
+        <text x="34" y="64" fill="#ffffff" opacity="0.55" font-size="18" letter-spacing="4">TOKENS THROUGH</text>
+        <text x="34" y="158" fill="#ffffff" font-size="84" font-weight="850">22.2B</text>
+      </g>
+      <g transform="translate(555 810)">
+        <rect width="465" height="218" rx="20" fill="#ffffff" fill-opacity="0.08" stroke="url(#cardStroke)" stroke-opacity="0.55"/>
+        <text x="34" y="64" fill="#ffffff" opacity="0.55" font-size="18" letter-spacing="4">CACHE LEVERAGE</text>
+        <text x="34" y="158" fill="#ffffff" font-size="84" font-weight="850">1:23.8</text>
+      </g>
+      <g transform="translate(60 1060)">
+        <rect width="465" height="218" rx="20" fill="#ffffff" fill-opacity="0.08" stroke="url(#cardStroke)" stroke-opacity="0.55"/>
+        <text x="34" y="64" fill="#ffffff" opacity="0.55" font-size="18" letter-spacing="4">GITHUB STARS</text>
+        <text x="34" y="158" fill="#ffffff" font-size="92" font-weight="850">2217</text>
+      </g>
+      <g transform="translate(555 1060)">
+        <rect width="465" height="218" rx="20" fill="#ffffff" fill-opacity="0.08" stroke="url(#cardStroke)" stroke-opacity="0.55"/>
+        <text x="34" y="64" fill="#ffffff" opacity="0.55" font-size="18" letter-spacing="4">REPOS · LANGS</text>
+        <text x="34" y="158" fill="#ffffff" font-size="86" font-weight="850">13 · 7</text>
+      </g>
+    </g>
+
+    <g transform="translate(60 1378)">
+      <text x="0" y="0" fill="#ffffff" opacity="0.55" font-size="18" letter-spacing="4">EVOLUTION</text>
+      <line x1="0" y1="62" x2="960" y2="62" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+      <g transform="translate(0 28)">
+        <circle cx="0" cy="34" r="10" fill="url(#accent)"/>
+        <text x="0" y="90" fill="#ffffff" font-size="24" font-weight="700">2026-01</text>
+        <text x="0" y="125" fill="#ffffff" opacity="0.6" font-size="20">Codex 起步</text>
+      </g>
+      <g transform="translate(300 28)">
+        <circle cx="0" cy="34" r="10" fill="url(#accent)"/>
+        <text x="0" y="90" fill="#ffffff" font-size="24" font-weight="700">2026-03</text>
+        <text x="0" y="125" fill="#ffffff" opacity="0.6" font-size="20">Claude 加入 · 大爆发</text>
+      </g>
+      <g transform="translate(610 28)">
+        <circle cx="0" cy="34" r="10" fill="url(#accent)"/>
+        <text x="0" y="90" fill="#ffffff" font-size="24" font-weight="700">2026-04</text>
+        <text x="0" y="125" fill="#ffffff" opacity="0.6" font-size="20">双引擎峰值 6.2B</text>
+      </g>
+      <g transform="translate(910 28)">
+        <circle cx="0" cy="34" r="10" fill="url(#accent)"/>
+        <text x="0" y="90" fill="#ffffff" font-size="24" font-weight="700" text-anchor="end">2026-05</text>
+        <text x="0" y="125" fill="#ffffff" opacity="0.6" font-size="20" text-anchor="end">6 工具时代</text>
+      </g>
+    </g>
+
+    <g transform="translate(60 1575)">
+      <rect x="0" y="0" width="465" height="172" rx="18" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.12"/>
+      <text x="28" y="42" fill="#ffffff" opacity="0.55" font-size="17" letter-spacing="3">CACHE LEVERAGE 排行</text>
+      <text x="28" y="82" fill="#ffffff" font-size="25" font-weight="700">Sonnet 4.6 · 29.1x</text>
+      <text x="28" y="117" fill="#ffffff" opacity="0.72" font-size="23">Opus 4.6 · 25.3x</text>
+      <text x="28" y="150" fill="#ffffff" opacity="0.6" font-size="22">Opus 4.7 (1M) · 21.9x</text>
+
+      <rect x="495" y="0" width="465" height="172" rx="18" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.12"/>
+      <text x="523" y="42" fill="#ffffff" opacity="0.55" font-size="17" letter-spacing="3">TOP SLASH 命令</text>
+      <text x="523" y="82" fill="#ffffff" font-size="25" font-weight="700">/effort · 1198</text>
+      <text x="523" y="117" fill="#ffffff" opacity="0.72" font-size="23">/usage · 137</text>
+      <text x="523" y="150" fill="#ffffff" opacity="0.6" font-size="22">/plan · 96</text>
+    </g>
+
+    <g transform="translate(60 1802)">
+      <line x1="0" y1="0" x2="960" y2="0" stroke="#ffffff" stroke-opacity="0.16"/>
+      <text x="480" y="44" text-anchor="middle" fill="#ffffff" font-size="25" font-weight="750" letter-spacing="4">GENERATE YOURS IN 30 SECONDS</text>
+      <text x="480" y="83" text-anchor="middle" fill="#ffffff" opacity="0.76" font-size="22" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/plugin marketplace add study8677/Readme.skill</text>
+      <text x="480" y="120" text-anchor="middle" fill="url(#accent)" font-size="22" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/plugin install readme-skill@study8677</text>
+      <text x="480" y="157" text-anchor="middle" fill="#ffffff" opacity="0.5" font-size="18" letter-spacing="2">github.com/study8677/Readme.skill</text>
+      <text x="480" y="188" text-anchor="middle" fill="#ffffff" opacity="0.32" font-size="13" letter-spacing="2">LOCAL-ONLY · ANONYMIZED · v2.5.1 · 2026-05-28</text>
+    </g>
+  </g>
+</svg>

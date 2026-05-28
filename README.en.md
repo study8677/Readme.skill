@@ -21,14 +21,14 @@ Reads your real Claude Code / Codex CLI / Kiro (AWS) / Trae (ByteDance) / Gemini
 ---
 
 <p align="center">
-  <a href="./examples/profile_20260515_en.md">
-    <img src="./examples/poster_20260515_en.svg" width="540" alt="Latest real run (anonymized)"/>
+  <a href="./examples/profile_20260528_en.md">
+    <img src="./examples/poster_20260528_en.svg" width="540" alt="Latest real run (anonymized)"/>
   </a>
 </p>
 
 <p align="center">
-  <em>↑ Real run on the author's machine (149 days · 19.4B tokens · 23.8× cache leverage · 1503★).</em><br/>
-  <em>Click for the full <a href="./examples/profile_20260515_en.md">Markdown profile</a>.</em>
+  <em>↑ Latest real run on the author's machine, v2.5.1 (148 days · 22.21B tokens · 23.8× cache leverage · 2,217★ · 4 AI tools in parallel).</em><br/>
+  <em>Click for the full <a href="./examples/profile_20260528_en.md">English profile</a> · <a href="./examples/profile_20260528.md">中文版</a>.</em>
 </p>
 
 ---
