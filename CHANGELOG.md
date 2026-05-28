@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-05-28
+
+> **6 引擎全员到齐** — 新增 Cursor 支持，至此已覆盖 6 个主流 AI 编程工具。
+
+### Added
+- **Cursor (Anysphere) 部分支持** — SKILL.md `Step 3e`：`~/Library/Application Support/Cursor/User/{workspaceStorage,globalStorage}/state.vscdb` 的 `composer.*` / `aiService.*` / `aichat` keys（VS Code fork，跟 Trae 同架构）+ 项目 `.cursor/{rules,mcp.json}` / `.cursorrules`。**token 权威在 Anysphere 云端 dashboard，本 skill 不联网，本地仅参考估算**。
+- **新触发词**：「分析我的 Cursor 使用情况」/ "summarize my Cursor history"。
+- Step 6.1 / 6.2 / 6.4 字段、Step 6.4 综合分数与多工具编排（升级到 6 工具五选 N）、降级表、红线段落均同步加入 Cursor 项。
+- README zh/en 顶部 hero 句、版本徽章 (`v2.5.1`)、「支持的 AI 编程工具」表都加上 Cursor 行。
+- plugin.json + marketplace.json description 反映 6 工具支持。
+
 ## [2.5.0] - 2026-05-28
 
 > **「四引擎」时代** — 从 Claude+Codex 双引擎扩展到 4 个 AI 编程工具。
@@ -79,7 +90,8 @@
 - 10 个维度的 Markdown profile。
 - 默认匿名 + OWASP-style 正则清洗。
 
-[Unreleased]: https://github.com/study8677/Readme.skill/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/study8677/Readme.skill/compare/v2.5.1...HEAD
+[2.5.1]: https://github.com/study8677/Readme.skill/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/study8677/Readme.skill/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/study8677/Readme.skill/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/study8677/Readme.skill/compare/v2.2.0...v2.3.0

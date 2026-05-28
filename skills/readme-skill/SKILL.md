@@ -3,12 +3,12 @@ name: readme-skill
 description: >
   生成一份对外可分享、脱敏的 AI-Native 开发者 README。
   量化展示我对 Claude Code + Codex CLI + Kiro (AWS) + Trae (ByteDance) +
-  Gemini Antigravity (Google) 的使用深度、AI 协作风格、项目与领域分布、
-  兴趣主题，以及与 GitHub 提交的产出关联。
+  Gemini Antigravity (Google) + Cursor 的使用深度、AI 协作风格、
+  项目与领域分布、兴趣主题，以及与 GitHub 提交的产出关联。
   Trigger when the user says: "生成我的 AI 档案" / "做一份 AI-native README" /
-  "分析我的 Claude / Codex / Kiro / Trae / Antigravity 使用情况" /
+  "分析我的 Claude / Codex / Kiro / Trae / Antigravity / Cursor 使用情况" /
   "总结我的 AI 使用" / "build my AI usage profile" /
-  "summarize my Claude / Codex / Kiro / Trae / Antigravity history" /
+  "summarize my Claude / Codex / Kiro / Trae / Antigravity / Cursor history" /
   "生成开发者画像".
   全程本地、只读、默认匿名、不上传任何数据。
 license: MIT
@@ -621,6 +621,132 @@ Antigravity data does not expose verified billing token counts. Use `—` in tok
 
 ---
 
+## Step 3e — 读取 Cursor 数据 (`~/Library/Application Support/Cursor/` + 项目 `.cursor/`)
+
+Cursor 是 Anysphere 出的 AI IDE，**基于 VS Code fork**（Electron），存储模型
+跟 Trae / VS Code 同款（`User/workspaceStorage/<hash>/state.vscdb` 的 `ItemTable`
+KV 表，加 `User/globalStorage/state.vscdb` 全局聚合库）。**chat / composer
+数据本地完整缓存**，但 **token 用量统计走云端 dashboard**（Cursor Pro 计费
+依赖云端），本机不持久化精确 token 数字。所以本步骤只读两类本地数据：
+
+1. 工作区 / 全局 `state.vscdb` 里的 chat / composer 元数据（数量、cwd、关键词）
+2. 项目 `.cursor/` 与 home 配置里的 rules / mcp / settings
+
+**所有读取必须只读**：SQLite 强制 `mode=ro&immutable=1`；不要触发任何 Cursor
+进程写操作。先检测目录是否存在，不存在直接跳过本节。
+
+### 3e.1 工作区数量与项目分布
+
+```bash
+# macOS 路径（Linux: ~/.config/Cursor/User/，Windows: %APPDATA%\Cursor\User\）
+CURSOR_BASE="$HOME/Library/Application Support/Cursor"
+CURSOR_WS="$CURSOR_BASE/User/workspaceStorage"
+
+[ -d "$CURSOR_WS" ] || { echo "Cursor not installed or no workspaces; skip Step 3e"; }
+
+# 工作区数（每个 hash 目录 = 一个被打开过的项目）
+ls -d "$CURSOR_WS"/*/ 2>/dev/null | wc -l
+
+# 每个工作区对应的真实项目路径（workspace.json 里有 folder / configuration）
+for d in "$CURSOR_WS"/*/; do
+  if [ -f "$d/workspace.json" ]; then
+    jq -r '.folder // .configuration // empty' "$d/workspace.json"
+  fi
+done | sort -u
+```
+
+### 3e.2 Chat / Composer 元数据（SQLite, read-only）
+
+全局聚合库在 `User/globalStorage/state.vscdb`。Cursor 的 chat / composer
+key 命名比 Trae 略稳定一些（社区有逆向资料），常见 prefix：`composer.*`、
+`aiService.*`、`workbench.panel.aichat.*`、`aiCodeBlockDiff.*`。但仍然
+**版本会变化**，必须先 dump 结构再下查询：
+
+```bash
+CURSOR_GLOBAL="$CURSOR_BASE/User/globalStorage/state.vscdb"
+
+if [ -f "$CURSOR_GLOBAL" ]; then
+  CSQ='sqlite3 file:'"$CURSOR_GLOBAL"'?mode=ro&immutable=1'
+  $CSQ ".tables"
+
+  # Composer / chat 类 key 排行（按 value 大小，大的通常是真实对话数据）
+  $CSQ "SELECT key, length(value) FROM ItemTable \
+        WHERE key LIKE 'composer.%' OR key LIKE 'aiService.%' \
+           OR key LIKE '%aichat%' OR key LIKE '%aiCodeBlockDiff%' \
+        ORDER BY length(value) DESC LIMIT 30;" 2>/dev/null
+
+  # All composers 列表（如果 composer.allComposers 存在，能拿到 composer 总数）
+  $CSQ "SELECT length(value) FROM ItemTable WHERE key = 'composer.allComposers';" 2>/dev/null
+fi
+
+# 工作区级 chat / composer
+for d in "$CURSOR_WS"/*/; do
+  db="$d/state.vscdb"
+  [ -f "$db" ] || continue
+  ws_chat_keys=$(sqlite3 "file:$db?mode=ro&immutable=1" \
+    "SELECT COUNT(*) FROM ItemTable WHERE key LIKE 'composer.%' OR key LIKE '%aichat%' OR key LIKE 'aiService.%';" 2>/dev/null)
+  echo "$(basename "$d") cursor_chat_keys=$ws_chat_keys"
+done
+```
+
+**期望提取**：
+
+| 字段 | 含义 | 备注 |
+| --- | --- | --- |
+| `cursor_workspaces` | 打开过的项目数 | `ls workspaceStorage/*/` 计数 |
+| `cursor_composer_count` | 估算的 composer 会话数 | 从 `composer.allComposers` 数组长度 或 composer-related key 数 |
+| `cursor_chat_session_count` | 估算的 chat session 数 | 按 `aichat`/`aiService` key 数估算 |
+| `cursor_active_projects` | 有 chat / composer 的项目数 | `ws_chat_keys > 0` 的工作区数 |
+| `cursor_corpus` | composer / chat 标题片段 | 仅采样若干条，用于关键词，不入报告原文 |
+
+**强烈降级提示**：跟 Trae 一样，Cursor 内部 key 没有官方稳定文档。如果
+`LIKE` 没匹中任何 row，老老实实写「Cursor 本地仅检测到 workspace 数量 N，
+chat / composer 内容 key 命名约定本工具暂不解析」，**不要编造 session 数**。
+
+### 3e.3 Token 用量 —— 本地部分可见，权威数字仅云端
+
+Cursor Pro 的精确 token 用量在云端 dashboard。本机 `ItemTable` 里可能含有
+**部分** token 元数据（比如 `aiService.applyAiHistory` 等 key 内嵌 JSON
+里会有 input/output token 字段），但 schema 不稳定也未公开。
+
+本 skill 的策略：
+1. **不发起任何网络请求**，云端 dashboard 永远不读。
+2. 如果能从 `ItemTable` 里靠 jq 抽出 token 字段 → **作为参考值**展示，明确
+   注明「Cursor 本地估算 token，非云端 dashboard 计费值」。
+3. 抽不出来就老实说「Cursor token 数据由 Anysphere 云端 dashboard 持有，
+   本 skill 出于『100% 本地 + 只读』原则不接入」。
+
+### 3e.4 项目 `.cursor/` 配置（rules / mcp / ignore）
+
+跟 Kiro `.kiro/`、Trae `.trae/` 一样，Cursor 在项目内提供 `.cursor/` 工作区
+目录。这是「用户给 AI 立规矩」的一手证据。
+
+```bash
+for path in <candidate-paths>; do
+  cursor_dir="$path/.cursor"
+  [ -d "$cursor_dir" ] || continue
+  echo "$path::cursor::rules=$(ls "$cursor_dir"/rules/*.{md,mdc} 2>/dev/null | wc -l)::mcp=$([ -f "$cursor_dir/mcp.json" ] && echo 1 || echo 0)::ignore=$([ -f "$cursor_dir/.cursorignore" ] && echo 1 || echo 0)"
+done
+
+# 兼容旧版根目录的 .cursorrules 单文件
+for path in <candidate-paths>; do
+  [ -f "$path/.cursorrules" ] && echo "$path::cursorrules=1"
+done
+```
+
+`.cursor/rules/*.{md,mdc}` 是 markdown / Markdown-with-frontmatter，**继续沿用
+Step 2.4b 的 YAML frontmatter 解析逻辑**。把它们合并进 6.2 的「AI 基础设施层」
+总表，新增一列「来源 = Cursor」。
+
+### 3e.5 Cursor 数据缺失时的诚实声明
+
+- `~/Library/Application Support/Cursor/` 不存在 → 完全跳过 Step 3e
+- 存在但工作区 chat key 解析失败 → 仅展示「打开过的工作区数 + `.cursor/` 配置」
+- token 数据本地不可信 → 明确写「权威 token 在云端 dashboard，本 skill 不联网；
+  本地估算仅作参考」
+
+---
+
 ## Step 4 — GitHub (via `gh`)
 
 ```bash
@@ -712,14 +838,15 @@ Aggregate:
 ### 6.1 一览
 - 总活跃天数 = unique union of all dates from
   `dailyActivity` (Claude) + Codex `by_date` + Claude `history by_date`
-  + Kiro `by_date` (3b.1) + `antigravity_active_days` (3d) + Trae 工作区
-  最后访问日期（如果能从 `workspace.json` 或 `state.vscdb` 的 mtime 推断；
-  推不出就略过 Trae 一项）
+  + Kiro `by_date` (3b.1) + `antigravity_active_days` (3d) + Trae / Cursor
+  工作区最后访问日期（如果能从 `workspace.json` 或 `state.vscdb` 的 mtime
+  推断；推不出就略过这两项）
 - 跨度 = `min..max` of those dates
 - 总 sessions / 总消息 / **claude_spent**（Σ input+output+cache_creation）
   / **claude_cache_read** / 总 codex threads / **codex_tokens** /
   **kiro_sessions** / **kiro_tokens**（如果 3b.1 拿到了）/
-  **trae_workspaces** / **antigravity_tasks**（Antigravity task/session 数）
+  **trae_workspaces** / **cursor_workspaces** + **cursor_composer_count** /
+  **antigravity_tasks**（Antigravity task/session 数）
   —— 这些数字必须出现在「一览」里，缺失项显示 `—`，不要省略行
 - 同期 GitHub: commits, PRs, issues, calendar_total
 - 本地 git: commits / +additions / −deletions / repos
@@ -736,11 +863,13 @@ If available, include `antigravity_text_files`, `antigravity_text_chars`, `antig
 - **多工具 / 多模型编排**: 列出每个模型的 spent / cache_read tokens。
   - **Claude / Codex / Kiro** model breakdown 合并到同一张 token 表（Kiro
     schema 有 model 列时按 3b.1 抽取）。
-  - **Trae** 的 token 数据本地不可读，在表中标注「Trae: 云端 only」。
+  - **Trae / Cursor** 的 token 数据本地不可信（云端权威），表中标注
+    「Trae: 云端 only」/「Cursor: 云端权威，本地仅参考」。
   - **Gemini Antigravity** 的 tasks/artifacts 单列展示，token 不可得时显示
     `—`，不要估算。
   - **总编排维度** = 同时活跃使用的 AI 工具数（Claude / Codex / Kiro / Trae /
-    Antigravity 五选 N）。用过 ≥ 3 个工具 → 报告里强调「多引擎编排者」叙事。
+    Antigravity / Cursor 六选 N）。用过 ≥ 3 个工具 → 报告里强调「多引擎
+    编排者」叙事。
 - **高级能力使用**: plan-mode 次数、effort 调节次数、skill 调用次数、
   自研 skills 数、hooks/MCP 数、plans/tasks 数、automations 数
 - **Antigravity 任务制协作**: `antigravity_tasks`、artifact type breakdown、
@@ -773,27 +902,28 @@ If available, include `antigravity_text_files`, `antigravity_text_chars`, `antig
 - 合并维度: each project key (real_cwd) accumulates
   `claude_sessions` + `codex_threads` + `kiro_sessions` (Step 3b.2) +
   `trae_workspace_hit` (0/1，Step 3c.1) + `antigravity_tasks` (Step 3d) +
-  `git_commits` + `git_lines`
+  `cursor_workspace_hit` (0/1，Step 3e.1) + `git_commits` + `git_lines`
 - Antigravity 没有可靠 cwd 时，用 metadata summary / markdown headings 提取
   topic key；能匹配到已有项目 basename 时并入该项目，否则作为 Antigravity
   topic bucket。
 - 综合分数 = `claude_sessions*5 + codex_threads*4 + kiro_sessions*4 +
-  trae_workspace_hit*2 + antigravity_tasks*4 + git_commits`
+  trae_workspace_hit*2 + cursor_workspace_hit*2 + antigravity_tasks*4 +
+  git_commits`
 - 排序取 Top 12，匿名化为 "项目 A/B/C..."（按分数顺序）
-- **多工具编排模式**（v2.5 升级 —— Claude + Codex + Kiro + Trae + Antigravity）：
-  对每个 Top 12 项目 / topic，按五种工具的活跃度分类：
+- **多工具编排模式**（v2.5 升级 —— Claude + Codex + Kiro + Trae + Antigravity +
+  Cursor）：对每个 Top 12 项目 / topic，按六种工具的活跃度分类：
   - 计算 `tools_used = ['claude' if claude_sessions>0, 'codex' if codex_threads>0,
     'kiro' if kiro_sessions>0, 'trae' if trae_workspace_hit>0,
-    'antigravity' if antigravity_tasks>0]`
+    'antigravity' if antigravity_tasks>0, 'cursor' if cursor_workspace_hit>0]`
   - `total_ai_units = claude_sessions + codex_threads + kiro_sessions +
-    trae_workspace_hit + antigravity_tasks`
+    trae_workspace_hit + antigravity_tasks + cursor_workspace_hit`
   - 当只有 1 个工具：标「`<tool>` 主导」
   - 2 个工具：标「双引擎（`<A>+<B>`）」
   - 3 个及以上：标「多引擎（`<A>+<B>+<C>...`）」
   - 在项目表中新增「编排模式」列
   - 汇总：多引擎项目数 / 双引擎项目数 / 单工具项目数 + 每种主导项目数
-  - 如果某个项目有 `.kiro/` 或 `.trae/` workspace 配置（3b.5 / 3c.4），
-    在「编排模式」末尾加 `[K]` 或 `[T]` 角标
+  - 如果某个项目有 `.kiro/` / `.trae/` / `.cursor/` workspace 配置
+    （3b.5 / 3c.4 / 3e.4），在「编排模式」末尾加 `[K]` / `[T]` / `[Cu]` 角标
 - 用证据打分给每个项目打**领域标签**，不要只按第一命中关键词硬归类：
   1. 分类前使用真实项目信号：`cwd` basename、GitHub repo 描述 / topics / primary language、Codex thread titles、Claude history first prompts、本地文件名提示（如 `package.json` 依赖、`frontend/`、`apps/web/`、`api/`）。匿名化只发生在最终输出阶段。
   2. 每个领域按命中证据累计分数，选择最高分。若两个领域接近，优先选择更具体的产品领域，而不是泛化到“基础设施 / 部署”。
@@ -843,8 +973,8 @@ make, get, just, also, will, would, can.
 
 ### 6.6 节奏
 - **24h 热力**: 合并 `hourCounts` (claude) + codex `by_hour` + history `by_hour`
-  + kiro `by_hour` (3b.1) + Antigravity `updatedAt` hour (3d) — Trae 本地无
-  时间戳粒度，不并入
+  + kiro `by_hour` (3b.1) + Antigravity `updatedAt` hour (3d) — Trae / Cursor
+  本地无可靠时间戳粒度，不并入
 - **活跃天数**: union of Claude / Codex / Kiro / Antigravity dates；连续活跃
   streak = 最长连续 1 天间隔的串
 - **峰值日**: max 的 dailyActivity.messageCount
@@ -1162,17 +1292,19 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 - 数据 100% 本地：`~/.claude/*` + 项目 `.claude/plans`（如配置）+ `~/.codex/*`
   + `~/.kiro/*` + `~/.local/share/kiro-cli/*` + `~/Library/Application Support/Trae/*`
-  + `~/.gemini/antigravity/brain/*` + 项目 `.kiro/`、`.trae/` + 本地 `git log`
+  + `~/Library/Application Support/Cursor/*` + `~/.gemini/antigravity/brain/*`
+  + 项目 `.kiro/`、`.trae/`、`.cursor/`、`.cursorrules` + 本地 `git log`
   + GitHub via `gh`
 - Claude plans 同时覆盖默认 `~/.claude/plans` 与 settings 中解析出的 `plansDirectory`
-- Kiro / Trae / Antigravity 数据自动检测，未安装的工具静默跳过；Trae 的 token
-  用量由 ByteDance 云端 API 持有，本 skill 不联网，本节默认缺失
+- Kiro / Trae / Antigravity / Cursor 数据自动检测，未安装的工具静默跳过；
+  Trae token 由 ByteDance 云端 API 持有、Cursor token 由 Anysphere 云端
+  dashboard 持有，本 skill 不联网，这两项默认仅本地估算
 - 对话正文仅用于关键词与协作风格分析，原文不会出现在报告中；Antigravity 只
   读取 metadata summary 与 markdown headings/checkbox，不读取截图、浏览器
   cache 或 pbtxt annotations
 - 项目名已匿名，API key / token / 邮箱 已正则清洗
-- 报告由 Claude Code / Codex / Kiro / Trae / Antigravity 本地数据按
-  Readme.skill 自动生成，可重复运行
+- 报告由 Claude Code / Codex / Kiro / Trae / Antigravity / Cursor 本地数据
+  按 Readme.skill 自动生成，可重复运行
 - 生成时间: **<ISO timestamp>**
 ```
 
@@ -1380,6 +1512,9 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 | Antigravity metadata 缺失 | 用 markdown 文件名、标题和文件 mtime 降级；count-based metrics 保留，date-based metrics 跳过无效记录 |
 | Antigravity 只有截图/二进制 | 只计 brain 目录为 task/session，不读取图片，不做 OCR，不编 topic |
 | Antigravity token 不可得 | token 表显示 `—` 或省略 Antigravity token；不要估算 |
+| `~/Library/Application Support/Cursor/` 不存在 | 完全跳过 Step 3e |
+| Cursor `state.vscdb` 的 composer/chat key 解析失败 | 仅展示「打开过的工作区数 + `.cursor/` 配置数」，不编 session/composer 数字 |
+| Cursor token 数据（云端权威，本地仅参考） | 报告里明写「Cursor token 权威在云端 dashboard，本地只能给参考估算」；不参与 Token 经济学排行 |
 | `gh` 未安装 / 未认证 | 跳过 GitHub 章节，profile 仍可生成 |
 | 候选路径不是 git 仓库 | 该项目从 git 统计中跳过 |
 | 数据全空 | 报告诚实地说明"暂无可统计的本地数据"，不要编数据 |
@@ -1387,15 +1522,17 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 ## 一些务必遵守的红线
 
 - 可以读取 `~/.claude/projects/*/<id>.jsonl`、`~/.kiro/sessions/cli/*.jsonl`、
-  Trae `state.vscdb` 的 chat 字段、Antigravity `brain/<uuid>/*.metadata.json`
-  与 markdown 文本，用于关键词提取、协作风格、Session 架构等深度分析（Step
-  6.3 / 6.5 受益）；但**不要把任何对话原文一字不差地写进 README**——脱敏后的
-  统计、概括、片段化关键词可以
-- **永远不要** 联网（除 `gh` 调用 GitHub 自身）。这意味着 Trae 的云端 token API
-  永远不可调用；如需 Trae token，仅读取用户自己 tokscale 缓存
+  Trae `state.vscdb` 的 chat 字段、Cursor `state.vscdb` 的 composer/aiService
+  字段、Antigravity `brain/<uuid>/*.metadata.json` 与 markdown 文本，用于
+  关键词提取、协作风格、Session 架构等深度分析（Step 6.3 / 6.5 受益）；但
+  **不要把任何对话原文一字不差地写进 README**——脱敏后的统计、概括、片段化
+  关键词可以
+- **永远不要** 联网（除 `gh` 调用 GitHub 自身）。这意味着 Trae / Cursor 的
+  云端 token API 永远不可调用；如需 Trae token，仅读取用户自己 tokscale 缓存
 - **永远不要** 修改 `~/.claude`、`~/.codex`、`~/.kiro`、`~/.local/share/kiro-cli`、
-  `~/Library/Application Support/Trae`、`~/.gemini/antigravity` 下任何文件。
-  所有 SQLite 必须 `mode=ro&immutable=1` 打开
+  `~/Library/Application Support/Trae`、`~/Library/Application Support/Cursor`、
+  `~/.gemini/antigravity` 下任何文件。所有 SQLite 必须
+  `mode=ro&immutable=1` 打开
 - Antigravity 只允许读取 `~/.gemini/antigravity/brain/*` 下的 metadata 与
   markdown 文本；不要读取 screenshots、pbtxt annotations、`~/.config/Antigravity`
   cache，且不要 OCR 图片

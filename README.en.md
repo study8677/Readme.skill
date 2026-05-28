@@ -4,13 +4,13 @@
 
 ### Turn your local AI coding history into a shareable developer card — in 30 seconds.
 
-Reads your real Claude Code / Codex CLI / Kiro (AWS) / Trae (ByteDance) / Gemini Antigravity (Google) usage data, generates a **shareable, redacted-by-default AI-Native developer profile** — a long-form report **and** a vertical poster you can post anywhere.
+Reads your real Claude Code / Codex CLI / Kiro (AWS) / Trae (ByteDance) / Gemini Antigravity (Google) / Cursor usage data, generates a **shareable, redacted-by-default AI-Native developer profile** — a long-form report **and** a vertical poster you can post anywhere.
 
 [![Stars](https://img.shields.io/github/stars/study8677/Readme.skill?style=flat-square&logo=github&color=yellow)](https://github.com/study8677/Readme.skill/stargazers)
 [![Forks](https://img.shields.io/github/forks/study8677/Readme.skill?style=flat-square&logo=github&color=blue)](https://github.com/study8677/Readme.skill/network/members)
 [![Issues](https://img.shields.io/github/issues/study8677/Readme.skill?style=flat-square&logo=github)](https://github.com/study8677/Readme.skill/issues)
 [![License](https://img.shields.io/github/license/study8677/Readme.skill?style=flat-square&color=green)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-v2.5.0-purple?style=flat-square)](./.claude-plugin/plugin.json)
+[![Version](https://img.shields.io/badge/version-v2.5.1-purple?style=flat-square)](./.claude-plugin/plugin.json)
 [![Featured](https://img.shields.io/badge/Featured-Ruan%20Yifeng%20Weekly%20%23395-red?style=flat-square)](https://www.ruanyifeng.com/blog/2026/05/weekly-issue-395.html)
 [![Linux Do](https://img.shields.io/badge/Community-Linux%20Do-orange?style=flat-square)](https://linux.do/)
 
@@ -122,6 +122,7 @@ The AI runs the full pipeline and writes `output/profile_<date>_en.md` for Engli
 | **Kiro (AWS)** | ✅ v2.5 added | `~/.kiro/sessions/cli/*.{json,jsonl}` + `~/.local/share/kiro-cli/data.sqlite3` + `~/.kiro/{agents,skills,steering,prompts,settings}` |
 | **Trae (ByteDance)** | ⚠️ v2.5 partial | `~/Library/Application Support/Trae/User/{workspaceStorage,globalStorage}/state.vscdb` (chat metadata, read-only) + workspace `.trae/{rules,skills}`. **Token usage is held by cloud API; this skill stays offline, so token numbers will be missing by default.** |
 | **Gemini Antigravity (Google)** | ✅ v2.5 added (community PR [#1](https://github.com/study8677/Readme.skill/pull/1)) | `~/.gemini/antigravity/brain/<uuid>/`: per-task `*.metadata.json` + `task.md` / `implementation_plan.md` / `walkthrough.md`. **Tokens unavailable** — task/artifact counts + text-scale estimate (non-billing) only. |
+| **Cursor (Anysphere)** | ⚠️ v2.5.1 added (partial) | `~/Library/Application Support/Cursor/User/{workspaceStorage,globalStorage}/state.vscdb` `composer.*` / `aiService.*` keys (VS Code fork, same architecture as Trae) + workspace `.cursor/{rules,mcp.json}` / `.cursorrules`. **Authoritative tokens are in cloud dashboard**, local-only estimates are reference. |
 | **GitHub** | ✅ Public contributions | `gh api graphql` — 365-day contributions, top repos, languages |
 | **Local git** | ✅ Full support | Read-only `git log` in each project, counts commits / +- lines |
 

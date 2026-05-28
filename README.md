@@ -4,13 +4,13 @@
 
 ### 30 秒，把你和 AI 协作的一切，变成一张能发朋友圈的开发者名片。
 
-读取本地 Claude Code / Codex CLI / Kiro / Trae / Gemini Antigravity 的真实使用数据，自动生成**对外可分享、默认脱敏**的 AI-Native 开发者画像 —— 一份长报告 + 一张竖屏海报。
+读取本地 Claude Code / Codex CLI / Kiro / Trae / Gemini Antigravity / Cursor 的真实使用数据，自动生成**对外可分享、默认脱敏**的 AI-Native 开发者画像 —— 一份长报告 + 一张竖屏海报。
 
 [![Stars](https://img.shields.io/github/stars/study8677/Readme.skill?style=flat-square&logo=github&color=yellow)](https://github.com/study8677/Readme.skill/stargazers)
 [![Forks](https://img.shields.io/github/forks/study8677/Readme.skill?style=flat-square&logo=github&color=blue)](https://github.com/study8677/Readme.skill/network/members)
 [![Issues](https://img.shields.io/github/issues/study8677/Readme.skill?style=flat-square&logo=github)](https://github.com/study8677/Readme.skill/issues)
 [![License](https://img.shields.io/github/license/study8677/Readme.skill?style=flat-square&color=green)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-v2.5.0-purple?style=flat-square)](./.claude-plugin/plugin.json)
+[![Version](https://img.shields.io/badge/version-v2.5.1-purple?style=flat-square)](./.claude-plugin/plugin.json)
 [![Featured](https://img.shields.io/badge/Featured-阮一峰周刊%20%23395-red?style=flat-square)](https://www.ruanyifeng.com/blog/2026/05/weekly-issue-395.html)
 [![Linux Do](https://img.shields.io/badge/Community-Linux%20Do-orange?style=flat-square)](https://linux.do/)
 
@@ -122,6 +122,7 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md` + `outpu
 | **Kiro (AWS)** | ✅ v2.5 新增 | `~/.kiro/sessions/cli/*.{json,jsonl}` + `~/.local/share/kiro-cli/data.sqlite3` + `~/.kiro/{agents,skills,steering,prompts,settings}` |
 | **Trae (ByteDance)** | ⚠️ v2.5 部分支持 | `~/Library/Application Support/Trae/User/{workspaceStorage,globalStorage}/state.vscdb`（chat 元数据，read-only）+ 项目 `.trae/{rules,skills}`。**token 用量走云端 API，本 skill 不联网，默认缺失** |
 | **Gemini Antigravity (Google)** | ✅ v2.5 新增（社区 PR [#1](https://github.com/study8677/Readme.skill/pull/1) 贡献） | `~/.gemini/antigravity/brain/<uuid>/`：每个 task/session 的 `*.metadata.json` + `task.md` / `implementation_plan.md` / `walkthrough.md`。**token 不可得**，按 task/artifact 计数 + text-scale 估算（非计费） |
+| **Cursor (Anysphere)** | ⚠️ v2.5.1 新增（部分支持） | `~/Library/Application Support/Cursor/User/{workspaceStorage,globalStorage}/state.vscdb` 的 `composer.*` / `aiService.*` keys（VS Code fork，同 Trae 架构）+ 项目 `.cursor/{rules,mcp.json}` / `.cursorrules`。**token 权威在云端 dashboard**，本地仅参考 |
 | **GitHub** | ✅ 公开贡献 | `gh api graphql` —— 365 天 contributions、top repos、语言 |
 | **本地 Git** | ✅ 完整支持 | 项目内只读 `git log`，统计 commit / +- 行数 |
 

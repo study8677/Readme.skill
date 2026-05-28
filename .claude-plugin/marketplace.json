@@ -8,7 +8,7 @@
     {
       "name": "readme-skill",
       "source": "./",
-      "description": "AI-Native developer profile generator: Claude Code + Codex CLI + Kiro + Trae + Antigravity (local-only, anonymized)."
+      "description": "AI-Native developer profile generator: Claude Code + Codex CLI + Kiro + Trae + Antigravity + Cursor (local-only, anonymized)."
     }
   ]
 }
