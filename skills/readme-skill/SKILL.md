@@ -2,23 +2,31 @@
 name: readme-skill
 description: >
   生成一份对外可分享、脱敏的 AI-Native 开发者 README。
-  量化展示我对 Claude Code + Codex CLI 的使用深度、AI 协作风格、项目与领域分布、
-  兴趣主题，以及与 GitHub 提交的产出关联。
+  量化展示我对 Claude Code + Codex CLI + Kiro (AWS) + Trae (ByteDance)
+  的使用深度、AI 协作风格、项目与领域分布、兴趣主题，以及与 GitHub 提交的产出关联。
   Trigger when the user says: "生成我的 AI 档案" / "做一份 AI-native README" /
-  "分析我的 Claude 使用情况" / "总结我的 AI 使用" / "build my AI usage profile"
-  / "summarize my Claude / Codex history" / "生成开发者画像".
+  "分析我的 Claude / Codex / Kiro / Trae 使用情况" / "总结我的 AI 使用" /
+  "build my AI usage profile" / "summarize my Claude / Codex / Kiro / Trae history"
+  / "生成开发者画像".
   全程本地、只读、默认匿名、不上传任何数据。
 license: MIT
 ---
 
 # Readme.skill — AI-Native 开发者档案生成器
 
-You (the AI agent invoking this skill) will read local Claude Code + Codex data,
-compute a fixed set of dimensions, and render a Markdown profile under
-`./output/` in the user's requested language (Chinese by default; English when
-the user asks in English or explicitly requests English). **You do all of the
-work** — read the files with `Read`, query sqlite via `Bash`, and synthesize the
-prose yourself. Do **not** write helper scripts; the skill is the recipe.
+You (the AI agent invoking this skill) will read local Claude Code + Codex CLI
++ Kiro (AWS) + Trae (ByteDance) data, compute a fixed set of dimensions, and
+render a Markdown profile under `./output/` in the user's requested language
+(Chinese by default; English when the user asks in English or explicitly
+requests English). **You do all of the work** — read the files with `Read`,
+query sqlite via `Bash`, and synthesize the prose yourself. Do **not** write
+helper scripts; the skill is the recipe.
+
+> 支持的 4 个 AI 编程工具（任一缺失都自动降级跳过）：
+> 1. **Claude Code** (`~/.claude/`) — Step 2
+> 2. **Codex CLI** (`~/.codex/`) — Step 3
+> 3. **Kiro CLI / IDE** (`~/.kiro/` + `~/.local/share/kiro-cli/`) — Step 3b
+> 4. **Trae IDE** (`~/Library/Application Support/Trae/` + 项目 `.trae/`) — Step 3c
 
 > 默认行为：**对外分享版** —— 项目名匿名、敏感信息脱敏。
 > 如果用户明确说"私人版 / 不要脱敏 / show real names"，跳过匿名步骤。
@@ -247,6 +255,270 @@ ls ~/.codex/rules/       | wc -l   # custom rules
 
 ---
 
+## Step 3b — 读取 Kiro 数据 (`~/.kiro/` + `~/.local/share/kiro-cli/`)
+
+Kiro 是 AWS 出的 agentic IDE / CLI（kirodotdev/Kiro）。Kiro CLI 把 ACP
+session 存到 `~/.kiro/sessions/cli/`（每个 session 两个文件：`<id>.json`
+元数据 + `<id>.jsonl` 事件流），把 token / model / provider 细分存到
+`~/.local/share/kiro-cli/data.sqlite3`。Steering / Agents / Skills / Prompts
+等基础设施在 `~/.kiro/` 下，跟 Claude Code 风格一致。
+
+**所有读取必须只读**：SQLite 用 `mode=ro&immutable=1`；JSON / JSONL 只
+`Read` / `jq`，不要修改。本步骤先检测 `~/.kiro/` 是否存在，不存在直接跳过本节。
+
+### 3b.1 总量与 token 细分 (SQLite, read-only)
+
+```bash
+[ -d "$HOME/.kiro" ] || { echo "Kiro not installed; skip Step 3b"; }
+
+KIRO_DB="$HOME/.local/share/kiro-cli/data.sqlite3"
+if [ -f "$KIRO_DB" ]; then
+  KSQ='sqlite3 file:'"$KIRO_DB"'?mode=ro&immutable=1'
+
+  # 先 dump schema 再决定查询列名 —— Kiro CLI 仍在迭代，表名可能演进
+  $KSQ ".schema" | head -80
+  $KSQ ".tables"
+fi
+```
+
+读 schema 后，按实际表名（常见为 `messages` / `sessions` / `usage` 等）
+**自适应**编写聚合 SQL。期望提取的字段：
+
+| 字段 | 含义 | 来源（按 schema 自适应）|
+| --- | --- | --- |
+| `kiro_sessions` | 总 session 数 | `COUNT(DISTINCT session_id)` |
+| `kiro_messages` | 总消息数 | `COUNT(*)` from message-like 表 |
+| `kiro_input_tokens` / `kiro_output_tokens` | 每模型 token | `SUM(input_tokens)` / `SUM(output_tokens)` |
+| `kiro_model_breakdown` | 按 `model` / `provider` 分组 | `GROUP BY model, provider` |
+| `kiro_by_date` | 按 `date(created_at)` 聚合 | 每日活跃 |
+| `kiro_by_hour` | 按 `strftime('%H', created_at)` | 24h 热力 |
+
+**降级**：如果 schema 找不到 token / model 列，仅按 session 计数即可，并在报告里说明
+「Kiro 早期版本未持久化 token 细分，本节按 session 总量给出」。
+
+### 3b.2 ACP Session 文件 (JSON + JSONL)
+
+```bash
+KIRO_SESS="$HOME/.kiro/sessions/cli"
+if [ -d "$KIRO_SESS" ]; then
+  # session 总数
+  ls "$KIRO_SESS"/*.json 2>/dev/null | wc -l
+
+  # 每个 session 抽元数据：cwd、agent、起止时间
+  for f in "$KIRO_SESS"/*.json; do
+    jq -r '[.cwd // "", .agent // "", .created_at // "", .updated_at // ""] | @tsv' "$f"
+  done | sort -u
+
+  # 项目分布（按 cwd 聚合）
+  for f in "$KIRO_SESS"/*.json; do
+    jq -r '.cwd // empty' "$f"
+  done | sort | uniq -c | sort -rn | head -15
+fi
+```
+
+`*.jsonl` 是事件流（user/assistant/tool-call 逐条）。**只采样前若干行用于
+关键词语料**（同 Claude `projects/*/*.jsonl` 的处理方式），不要把原文写进
+report：
+
+```bash
+for f in "$KIRO_SESS"/*.jsonl; do
+  head -50 "$f" | jq -r 'select(.role == "user") | .content // empty' 2>/dev/null
+done | head -300 > /tmp/kiro_corpus.txt   # 关键词语料
+```
+
+### 3b.3 Kiro 基础设施层（agents / skills / steering / prompts / mcp）
+
+跟 Claude / Codex 的 skills 体系**一一对应**，扫法一致：
+
+```bash
+# 全局 agents（每个文件是一个 .json，filename 即 agent 名）
+ls ~/.kiro/agents/*.json 2>/dev/null | wc -l
+
+# 全局 skills（每个目录一个，含 SKILL.md，frontmatter 同 Agent Skills 标准）
+ls -d ~/.kiro/skills/*/ 2>/dev/null
+
+# Steering 文件（项目规范 / 架构决策，markdown）
+ls ~/.kiro/steering/*.md 2>/dev/null | wc -l
+
+# Prompts 模板
+ls ~/.kiro/prompts/ 2>/dev/null | wc -l
+
+# Settings & MCP
+[ -f ~/.kiro/settings/cli.json ] && cat ~/.kiro/settings/cli.json | jq 'keys'
+[ -f ~/.kiro/settings/mcp.json ] && cat ~/.kiro/settings/mcp.json | jq '.mcpServers | keys'
+```
+
+对每个 `~/.kiro/skills/*/SKILL.md`，**沿用 Step 2.4b 的 YAML frontmatter 解析逻辑**
+（`Read` 完整 frontmatter，按 `>` / `|` / 引号 / 单行四种 scalar 处理）。
+Kiro skills 用的就是 Agent Skills 开放标准，跟 Claude / Codex 字段完全相同
+（`name` + `description`）。
+
+把 `~/.kiro/skills/` 合并进 Step 2.4b 的 skill 总表，新增一列「来源 = Kiro」。
+
+### 3b.4 Knowledge bases（实验功能，可选）
+
+```bash
+KIRO_KB="$HOME/.local/share/kiro-cli/knowledge_bases"
+if [ -d "$KIRO_KB" ]; then
+  ls -d "$KIRO_KB"/*/ 2>/dev/null   # 每个 agent 一个独立 KB
+fi
+```
+
+知识库属于「AI 基础设施层」高级信号 —— 用户主动给 agent 喂资料。统计有几个
+KB、覆盖哪些 agent 即可，不读 `data.json` 原文。
+
+### 3b.5 工作区 `.kiro/` 配置（按项目）
+
+对 Step 5 候选目录路径列表里的每个项目根，再检查项目内的 workspace-level
+Kiro 配置（这往往是用户日常工作的真实证据）：
+
+```bash
+for path in <candidate-paths>; do
+  for kind in agents skills steering prompts; do
+    if [ -d "$path/.kiro/$kind" ]; then
+      echo "$path::$kind::$(ls "$path/.kiro/$kind" 2>/dev/null | wc -l)"
+    fi
+  done
+done
+```
+
+合并到 6.4 「项目与领域」时，给配置了 `.kiro/` 的项目打 `Kiro+` 标记。
+
+### 3b.6 Kiro 数据来源不可读时的诚实声明
+
+如果 Kiro 安装但 `data.sqlite3` 不存在（用户只用过 IDE 桌面版，未跑 CLI），
+本步骤仅能采集到 Steering / Agents / Skills 配置数，**不要编造 session / token 数字**。
+在最终报告的「Kiro 章节」明确写：「Kiro CLI 数据未生成，本节仅展示 Steering /
+Agents / Skills 配置；如需完整 session/token 统计请先运行 Kiro CLI。」
+
+---
+
+## Step 3c — 读取 Trae 数据 (`~/Library/Application Support/Trae/` + 项目 `.trae/`)
+
+Trae 是字节跳动出的 AI IDE，基于 VS Code fork（Electron）。**chat 对话存在
+本地 SQLite**（`User/workspaceStorage/<hash>/state.vscdb`，与 Cursor 同款机制），
+**但 token 用量统计走云端 API**（`query_user_usage_group_by_session`），
+本机不持久化。所以本步骤只读两类本地数据：
+
+1. 工作区 `state.vscdb` 里的 chat 元数据（数量、cwd、关键词）
+2. 项目 `.trae/` 与 home 配置里的 rules / skills / settings
+
+**所有读取必须只读**：SQLite 强制 `mode=ro&immutable=1`；不要触发任何 Trae
+进程写操作。先检测目录是否存在，不存在直接跳过本节。
+
+### 3c.1 工作区数量与项目分布
+
+```bash
+# macOS 路径（Linux 类似在 ~/.config/Trae/，Windows 在 %APPDATA%\Trae\）
+TRAE_BASE="$HOME/Library/Application Support/Trae"
+TRAE_WS="$TRAE_BASE/User/workspaceStorage"
+
+[ -d "$TRAE_WS" ] || { echo "Trae not installed or no workspaces; skip Step 3c"; }
+
+# 工作区数（每个 hash 目录 = 一个被打开过的项目）
+ls -d "$TRAE_WS"/*/ 2>/dev/null | wc -l
+
+# 每个工作区对应的真实项目路径（workspace.json 里有 folder/uri）
+for d in "$TRAE_WS"/*/; do
+  if [ -f "$d/workspace.json" ]; then
+    jq -r '.folder // .configuration // empty' "$d/workspace.json"
+  fi
+done | sort -u
+```
+
+### 3c.2 Chat 元数据（SQLite, read-only）
+
+每个工作区有自己的 `state.vscdb`；另外 `~/Library/Application Support/Trae/User/globalStorage/state.vscdb` 是全局聚合库。**Trae 的 chat 表名 / key 前缀
+在版本间会变化**（早期沿用 VS Code 的 `ItemTable`，新版本可能新增 Trae 专用表），
+**先 dump 一下结构再下查询**：
+
+```bash
+TRAE_GLOBAL="$TRAE_BASE/User/globalStorage/state.vscdb"
+
+if [ -f "$TRAE_GLOBAL" ]; then
+  TSQ='sqlite3 file:'"$TRAE_GLOBAL"'?mode=ro&immutable=1'
+  $TSQ ".tables"
+  $TSQ "SELECT name FROM sqlite_master WHERE type='table';"
+
+  # 常见结构：ItemTable(key TEXT, value BLOB) —— 类 VS Code KV
+  # Trae 把 chat 存为 key='trae.chat.*' 或 'composer.*' 形式（版本不同前缀不同）
+  $TSQ "SELECT key, length(value) FROM ItemTable \
+        WHERE key LIKE '%chat%' OR key LIKE '%conversation%' OR key LIKE '%composer%' \
+        ORDER BY length(value) DESC LIMIT 30;" 2>/dev/null
+fi
+
+# 工作区级 chat
+for d in "$TRAE_WS"/*/; do
+  db="$d/state.vscdb"
+  [ -f "$db" ] || continue
+  ws_chat_keys=$(sqlite3 "file:$db?mode=ro&immutable=1" \
+    "SELECT COUNT(*) FROM ItemTable WHERE key LIKE '%chat%' OR key LIKE '%composer%';" 2>/dev/null)
+  echo "$(basename "$d") chat_keys=$ws_chat_keys"
+done
+```
+
+**期望提取**：
+
+| 字段 | 含义 | 备注 |
+| --- | --- | --- |
+| `trae_workspaces` | 打开过的项目数 | `ls workspaceStorage/*/` 计数 |
+| `trae_chat_session_count` | 估算的 chat session 数 | 按 chat-related key 数估算 |
+| `trae_active_projects` | 有 chat 的项目数 | `ws_chat_keys > 0` 的工作区数 |
+| `trae_corpus` | chat 标题 / 首条 user message | 仅采样若干条，用于关键词，不入报告原文 |
+
+**强烈降级提示**：
+- Trae chat 的 key 格式**没有公开稳定文档**。如果 `LIKE` 没匹中任何 row，
+  老老实实在报告里写「Trae 本地 chat 仅检测到 workspace 数量 N，对话内容
+  key 命名约定本工具暂不解析」，**不要编造 session 数**。
+- 如果工作区目录为空或 `state.vscdb` 文件不存在，直接跳过该工作区。
+
+### 3c.3 Token 用量 —— 仅云端，本地无法读
+
+Trae 的 token / 模型用量走云端 API。第三方工具（如 tokscale）的做法是：
+用户先 `tokscale trae login`，再调 `query_user_usage_group_by_session` 拉数据
+缓存到 `~/.config/tokscale/trae-cache/sessions/*.json`。
+
+**本 skill 不发起任何网络请求**，所以 Trae 的 token 数字无法被采集。
+最终报告里诚实写：「Trae 的 token 用量数据由 ByteDance 云端 API 持有，
+本 skill 出于『100% 本地 + 只读』原则不接入；如需 Trae token，请使用
+tokscale 等第三方工具单独采集后人工补入。」
+
+可选：如果用户**已经**在 `~/.config/tokscale/trae-cache/sessions/` 里有
+导出的 JSON 缓存，可以读它（只读、本地）：
+
+```bash
+TOKSCALE_TRAE="$HOME/.config/tokscale/trae-cache/sessions"
+if [ -d "$TOKSCALE_TRAE" ]; then
+  jq -s 'map(.token_count // 0) | add' "$TOKSCALE_TRAE"/*.json 2>/dev/null
+  jq -r '.model // empty' "$TOKSCALE_TRAE"/*.json 2>/dev/null | sort | uniq -c
+fi
+```
+
+### 3c.4 项目 `.trae/` 配置（rules / skills / .ignore）
+
+跟 Kiro `.kiro/`、Claude 项目 `.claude/` 一样，Trae 在项目内提供 `.trae/`
+工作区目录。这是「用户给 AI 立规矩」的一手证据。
+
+```bash
+for path in <candidate-paths>; do
+  trae_dir="$path/.trae"
+  [ -d "$trae_dir" ] || continue
+  echo "$path::trae::rules=$(ls "$trae_dir"/rules/*.md 2>/dev/null | wc -l)::skills=$(ls -d "$trae_dir"/skills/*/ 2>/dev/null | wc -l)::ignore=$([ -f "$trae_dir/.ignore" ] && echo 1 || echo 0)"
+done
+```
+
+`.trae/rules/*.md` 与 `.trae/skills/*/SKILL.md` 都是 markdown，
+**继续沿用 Step 2.4b 的 YAML frontmatter 解析逻辑**。把它们合并进 6.2 的
+「AI 基础设施层」总表，新增一列「来源 = Trae」。
+
+### 3c.5 Trae 数据缺失时的诚实声明
+
+- `~/Library/Application Support/Trae/` 不存在 → 完全跳过本节
+- 存在但工作区 chat key 解析失败 → 仅展示「打开过的项目数 + `.trae/` 配置」
+- token 数据永远缺失 → 明确写「本地未持有，需经云端 API 拉取，本 skill 不联网」
+
+---
+
 ## Step 4 — GitHub (via `gh`)
 
 ```bash
@@ -307,6 +579,10 @@ Aggregate languages by `Σ size` per language across all repos.
 Build the candidate path set from:
 1. Real `cwd` recovered for each `~/.claude/projects/<encoded>/`
 2. `cwd` column from Codex `threads` table
+3. `cwd` field in Kiro `~/.kiro/sessions/cli/*.json`
+4. `folder` field in Trae `User/workspaceStorage/*/workspace.json`
+
+Dedupe the union before running git checks.
 
 For each path that's a git repo, count the **current user's** commits in the
 past year:
@@ -333,9 +609,14 @@ Aggregate:
 
 ### 6.1 一览
 - 总活跃天数 = unique union of all dates from
-  `dailyActivity`, codex `by_date`, history `by_date`
+  `dailyActivity` (Claude) + Codex `by_date` + Claude `history by_date`
+  + Kiro `by_date` (3b.1) + Trae 工作区最后访问日期（如果能从
+  `workspace.json` 或 `state.vscdb` 的 mtime 推断；推不出就只用前三者）
 - 跨度 = `min..max` of those dates
-- 总 sessions / 总消息 / **claude_spent**（Σ input+output+cache_creation）/ **claude_cache_read** / 总 threads / **codex_tokens**（这四个数字必须出现在「一览」里）
+- 总 sessions / 总消息 / **claude_spent**（Σ input+output+cache_creation）
+  / **claude_cache_read** / 总 codex threads / **codex_tokens** /
+  **kiro_sessions** / **kiro_tokens**（如果 3b.1 拿到了）/
+  **trae_workspaces**（这些数字必须出现在「一览」里，缺失项显示 `—`，不要省略行）
 - 同期 GitHub: commits, PRs, issues, calendar_total
 - 本地 git: commits / +additions / −deletions / repos
 - **Velocity 指标**（v2.0 新增）:
@@ -345,15 +626,21 @@ Aggregate:
   - `cross_stack_langs = count of distinct primary languages across repos`
 
 ### 6.2 AI-Native 实践（核心章节）
-- **多模型编排**: 列出每个模型的 spent / cache_read tokens
+- **多模型编排**: 列出每个模型的 spent / cache_read tokens。
+  把 **Kiro CLI 的 model breakdown（3b.1）合并进同一张表**（如果 schema
+  有 model 列）；**Trae 的 token 数据本地不可读**，在表中标注「Trae: 云端 only」。
+  **总编排维度** = 同时活跃使用的 AI 工具数（Claude / Codex / Kiro / Trae 四选 N）。
+  用过 ≥ 3 个工具 → 报告里强调「多引擎编排者」叙事。
 - **高级能力使用**: plan-mode 次数、effort 调节次数、skill 调用次数、
   自研 skills 数、hooks/MCP 数、plans/tasks 数、automations 数
 - **Prompt caching 熟练度**: cache_to_spent_ratio
 - **Reasoning effort 分布**: xhigh/high/medium/low 占比
 - **AI 基础设施层**（v2.0 新增 —— 这是最 AI-native 的信号）:
-  列出用户亲手构建的 skills / hooks / automations / rules，每项给
-  `名称 | 一句话描述 | 调用次数（如可从 history 统计）`。
+  列出用户亲手构建的 skills / hooks / automations / rules / steering / agents，
+  每项给 `名称 | 一句话描述 | 来源（Claude/Codex/Kiro/Trae）| 调用次数（如可从 history 统计）`。
   区分「自建」（用户原创）与「安装」（第三方）。
+  **跨工具复用的 skill**（同名 SKILL.md 同时出现在 `~/.claude/skills/` 和
+  `~/.kiro/skills/`）单独高亮 —— 这是真正的 AI 基础设施互操作信号。
   这一段的叙事重点：**不只是 AI 的使用者，更是 AI 工作流的建设者**。
 
 ### 6.3 协作风格
@@ -372,14 +659,21 @@ Aggregate:
 
 ### 6.4 项目与领域
 - 合并维度: each project key (real_cwd) accumulates
-  `sessions`(claude) + `codex_threads` + `git_commits` + `git_lines`
-- 综合分数 = `sessions*5 + codex_threads*4 + git_commits`
+  `claude_sessions` + `codex_threads` + `kiro_sessions` (Step 3b.2)
+  + `trae_workspace_hit` (0/1，Step 3c.1) + `git_commits` + `git_lines`
+- 综合分数 = `claude_sessions*5 + codex_threads*4 + kiro_sessions*4
+  + trae_workspace_hit*2 + git_commits`
 - 排序取 Top 12，匿名化为 "项目 A/B/C..."（按分数顺序）
-- **双工具编排模式**（v2.0 新增）：对每个 Top 12 项目，计算：
-  - `claude_ratio = claude_sessions / (claude_sessions + codex_threads)`
-  - 分类为：**Claude 主导**（ratio > 0.7）/ **Codex 主导**（ratio < 0.3）/ **双引擎**（0.3~0.7）
+- **多工具编排模式**（v2.5 升级）：对每个 Top 12 项目，按四种工具的活跃度分类：
+  - 计算 `tools_used = ['claude' if claude_sessions>0, 'codex' if codex_threads>0,
+    'kiro' if kiro_sessions>0, 'trae' if trae_workspace_hit>0]`
+  - 当只有 1 个工具：标 「`<tool>` 主导」
+  - 2 个工具：标「双引擎（`<A>+<B>`）」
+  - 3 个及以上：标「多引擎（`<A>+<B>+<C>...`）」
   - 在项目表中新增「编排模式」列
-  - 汇总：双引擎项目数 / Claude 主导数 / Codex 主导数
+  - 汇总：多引擎项目数 / 双引擎项目数 / 单工具项目数
+  - 如果某个项目有 `.kiro/` 或 `.trae/` workspace 配置（3b.5 / 3c.4），
+    在「编排模式」末尾加 `[K]` 或 `[T]` 角标
 - 用证据打分给每个项目打**领域标签**，不要只按第一命中关键词硬归类：
   1. 分类前使用真实项目信号：`cwd` basename、GitHub repo 描述 / topics / primary language、Codex thread titles、Claude history first prompts、本地文件名提示（如 `package.json` 依赖、`frontend/`、`apps/web/`、`api/`）。匿名化只发生在最终输出阶段。
   2. 每个领域按命中证据累计分数，选择最高分。若两个领域接近，优先选择更具体的产品领域，而不是泛化到“基础设施 / 部署”。
@@ -428,6 +722,7 @@ make, get, just, also, will, would, can.
 
 ### 6.6 节奏
 - **24h 热力**: 合并 `hourCounts` (claude) + codex `by_hour` + history `by_hour`
+  + kiro `by_hour` (3b.1) — Trae 本地无时间戳粒度，不并入
 - **活跃天数**: union of dates；连续活跃 streak = 最长连续 1 天间隔的串
 - **峰值日**: max 的 dailyActivity.messageCount
 - **首次/最近**: min/max date
@@ -737,11 +1032,15 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ## 📊 数据来源 & 隐私承诺
 
-- 数据 100% 本地：`~/.claude/*` + 项目 `.claude/plans`（如配置）+ `~/.codex/*` + 本地 `git log` + GitHub via `gh`
+- 数据 100% 本地：`~/.claude/*` + 项目 `.claude/plans`（如配置）+ `~/.codex/*`
+  + `~/.kiro/*` + `~/.local/share/kiro-cli/*` + `~/Library/Application Support/Trae/*`
+  + 项目 `.kiro/`、`.trae/` + 本地 `git log` + GitHub via `gh`
 - Claude plans 同时覆盖默认 `~/.claude/plans` 与 settings 中解析出的 `plansDirectory`
+- Kiro / Trae 数据自动检测，未安装的工具静默跳过；Trae 的 token 用量由
+  ByteDance 云端 API 持有，本 skill 不联网，本节默认缺失
 - 对话正文仅用于关键词与协作风格分析，原文不会出现在报告中
 - 项目名已匿名，API key / token / 邮箱 已正则清洗
-- 报告由 Claude Code / Codex 按 Readme.skill 自动生成，可重复运行
+- 报告由 Claude Code / Codex / Kiro / Trae 按 Readme.skill 自动生成，可重复运行
 - 生成时间: **<ISO timestamp>**
 ```
 
@@ -937,15 +1236,27 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 | --- | --- |
 | `~/.claude/stats-cache.json` 不存在 | 跳过 Claude 总量章节，仅基于 history.jsonl 估算 |
 | `~/.codex/state_5.sqlite` 不存在 | 跳过 Codex 章节；如果 history.jsonl 仍在，至少给个总数 |
+| `~/.kiro/` 不存在 | 完全跳过 Step 3b，不在一览里出现 Kiro 字段 |
+| `~/.kiro/` 存在但 `~/.local/share/kiro-cli/data.sqlite3` 不存在 | 只统计 Steering / Agents / Skills 配置数，session/token 标 `—` 并在报告里说明「Kiro CLI 数据未生成」 |
+| Kiro SQLite schema 找不到 token 列 | 仅按 session 计数，在表里写「token 字段未持久化」 |
+| `~/Library/Application Support/Trae/` 不存在 | 完全跳过 Step 3c |
+| Trae `state.vscdb` 的 chat key 解析失败 | 仅展示「打开过的工作区数 + `.trae/` 配置数」，不编 session/message 数字 |
+| Trae token 数据（永远缺失，云端 only） | 报告里明写「Trae token 在云端，本 skill 不联网」；除非用户手动提供 tokscale 导出 |
 | `gh` 未安装 / 未认证 | 跳过 GitHub 章节，profile 仍可生成 |
 | 候选路径不是 git 仓库 | 该项目从 git 统计中跳过 |
 | 数据全空 | 报告诚实地说明"暂无可统计的本地数据"，不要编数据 |
 
 ## 一些务必遵守的红线
 
-- 可以读取 `~/.claude/projects/*/<id>.jsonl` 里的 `message.content` 用于关键词提取、协作风格、Session 架构等深度分析（Step 6.3 / 6.5 受益）；但**不要把任何对话原文一字不差地写进 README**——脱敏后的统计、概括、片段化关键词可以
-- **永远不要** 联网（除 `gh` 调用 GitHub 自身）
-- **永远不要** 修改 `~/.claude` 或 `~/.codex` 下任何文件
+- 可以读取 `~/.claude/projects/*/<id>.jsonl`、`~/.kiro/sessions/cli/*.jsonl`、
+  Trae `state.vscdb` 的 chat 字段用于关键词提取、协作风格、Session 架构等深度分析
+  （Step 6.3 / 6.5 受益）；但**不要把任何对话原文一字不差地写进 README**——
+  脱敏后的统计、概括、片段化关键词可以
+- **永远不要** 联网（除 `gh` 调用 GitHub 自身）。这意味着 Trae 的云端 token API
+  永远不可调用；如需 Trae token，仅读取用户自己 tokscale 缓存
+- **永远不要** 修改 `~/.claude`、`~/.codex`、`~/.kiro`、`~/.local/share/kiro-cli`、
+  `~/Library/Application Support/Trae` 下任何文件。所有 SQLite 必须
+  `mode=ro&immutable=1` 打开
 - **永远不要** 写脚本替代本指令；本 skill 的本质就是让 agent 自己读、自己算、自己写
 
 ## 参考样板（外形上对标这些 skill）
