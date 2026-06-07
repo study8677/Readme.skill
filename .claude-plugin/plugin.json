@@ -1,7 +1,7 @@
 {
   "name": "readme-skill",
-  "description": "Generate an AI-Native developer profile from local Claude Code + Codex CLI + Kiro (AWS) + Trae (ByteDance) + Gemini Antigravity (Google) + Cursor data, GitHub contributions, and git log. Local-only, read-only, anonymized by default.",
-  "version": "2.5.1",
+  "description": "Generate an AI-Native developer profile or monthly/time-window report from local Claude Code + Codex CLI + Kiro (AWS) + Trae (ByteDance) + Gemini Antigravity (Google) + Cursor composer metadata, GitHub contributions, and git log. Local-only, read-only, anonymized by default.",
+  "version": "2.5.3",
   "author": {
     "name": "JingWen Fan",
     "url": "https://github.com/study8677"

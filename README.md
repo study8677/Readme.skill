@@ -10,7 +10,7 @@
 [![Forks](https://img.shields.io/github/forks/study8677/Readme.skill?style=flat-square&logo=github&color=blue)](https://github.com/study8677/Readme.skill/network/members)
 [![Issues](https://img.shields.io/github/issues/study8677/Readme.skill?style=flat-square&logo=github)](https://github.com/study8677/Readme.skill/issues)
 [![License](https://img.shields.io/github/license/study8677/Readme.skill?style=flat-square&color=green)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-v2.5.1-purple?style=flat-square)](./.claude-plugin/plugin.json)
+[![Version](https://img.shields.io/badge/version-v2.5.3-purple?style=flat-square)](./.claude-plugin/plugin.json)
 [![Featured](https://img.shields.io/badge/Featured-阮一峰周刊%20%23395-red?style=flat-square)](https://www.ruanyifeng.com/blog/2026/05/weekly-issue-395.html)
 [![Linux Do](https://img.shields.io/badge/Community-Linux%20Do-orange?style=flat-square)](https://linux.do/)
 
@@ -36,6 +36,7 @@
 ## ✨ 它能给你什么
 
 - **一份长报告**（[示例](./examples/profile_20260515.md)）— 10 个维度叙事：AI-native 实践 / Cache leverage / Session 架构 / Token 经济学 / Evolution 曲线 / 项目领域 …
+- **月度 / 阶段报告** — 可以指定 `2026-05`、`2026-03 到 2026-05`、`最近30天`，看某个阶段 AI 编码带来的效果和变化。
 - **一张竖屏海报**（[示例 SVG](./examples/poster_20260515_zh.svg)）— 1080×1920，6 个英雄数字 + AI 自评金句 + 身份徽章 + 一键安装 CTA，社媒直发不丢人。
 - **完全本地完成**：除调用 `gh` 拉你自己的 GitHub 公开贡献外，**0 联网、0 上传、0 写盘到 `~/.claude`**。
 - **默认匿名**：项目名变 「项目 A/B/C」，私有仓变 `Private Repo X`，API key / token / 邮箱按 OWASP 正则清洗。
@@ -47,7 +48,7 @@
 | --- | --- |
 | **正在求职的开发者** | 在 GitHub profile 顶部放一张你跟 AI 协作的真实画像，**比简历的 "熟练使用 AI 工具" 强 100 倍** |
 | **AI-Native 实践派** | 量化展示你的 cache leverage、多模型编排、自建 skill 数 —— 这些数字用面试讲不出来 |
-| **年终复盘 / 周报困难户** | 跑一次，得到 149 天的活跃热力图 + Evolution 曲线，复盘材料一键齐 |
+| **年终复盘 / 月报 / 周报困难户** | 跑一次，得到全量或指定月份的活跃热力图 + Evolution 曲线，复盘材料一键齐 |
 | **小红书 / 推特 / 微信 创作者** | 海报内置传播 3 件套（金句 + 徽章 + 安装 CTA），转发链路天然形成 |
 | **团队 Tech Lead** | 让团队每人跑一份，了解大家的 AI 协作深度，找 best practice 而不是 best worker |
 
@@ -103,10 +104,13 @@ mkdir -p ~/.claude/skills/readme-skill && curl -fsSL https://raw.githubuserconte
 - 「生成我的 AI 档案」
 - 「做一份 AI-native README」
 - 「分析我的 Claude / Codex 使用情况」
+- 「生成 2026-05 的 AI 月度报告」
+- 「分析 2026-03 到 2026-05 AI 编码变化」
 - "build my AI usage profile"
+- "build my AI usage profile for May 2026"
 - "summarize my Claude / Codex history"
 
-AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md` + `output/poster_<日期>_<lang>.svg`。中文提问出中文版，英文提问出英文版。
+AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md` + `output/poster_<日期>_<lang>.svg`。如果指定月份 / 时间范围，文件名会带上窗口后缀，例如 `output/profile_202605_<日期>.md` 和 `output/poster_202605_<日期>_<lang>.svg`。中文提问出中文版，英文提问出英文版。
 
 ### 私人版 vs 分享版
 
@@ -122,9 +126,9 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md` + `outpu
 | **Kiro (AWS)** | ✅ v2.5 新增 | `~/.kiro/sessions/cli/*.{json,jsonl}` + `~/.local/share/kiro-cli/data.sqlite3` + `~/.kiro/{agents,skills,steering,prompts,settings}` |
 | **Trae (ByteDance)** | ⚠️ v2.5 部分支持 | `~/Library/Application Support/Trae/User/{workspaceStorage,globalStorage}/state.vscdb`（chat 元数据，read-only）+ 项目 `.trae/{rules,skills}`。**token 用量走云端 API，本 skill 不联网，默认缺失** |
 | **Gemini Antigravity (Google)** | ✅ v2.5 新增（社区 PR [#1](https://github.com/study8677/Readme.skill/pull/1) 贡献） | `~/.gemini/antigravity/brain/<uuid>/`：每个 task/session 的 `*.metadata.json` + `task.md` / `implementation_plan.md` / `walkthrough.md`。**token 不可得**，按 task/artifact 计数 + text-scale 估算（非计费） |
-| **Cursor (Anysphere)** | ⚠️ v2.5.1 新增（部分支持） | `~/Library/Application Support/Cursor/User/{workspaceStorage,globalStorage}/state.vscdb` 的 `composer.*` / `aiService.*` keys（VS Code fork，同 Trae 架构）+ 项目 `.cursor/{rules,mcp.json}` / `.cursorrules`。**token 权威在云端 dashboard**，本地仅参考 |
-| **GitHub** | ✅ 公开贡献 | `gh api graphql` —— 365 天 contributions、top repos、语言 |
-| **本地 Git** | ✅ 完整支持 | 项目内只读 `git log`，统计 commit / +- 行数 |
+| **Cursor (Anysphere)** | ✅ v2.5.3 增强 | `~/Library/Application Support/Cursor/User/{workspaceStorage,globalStorage}/state.vscdb` 的 `composer.composerHeaders`（标题 / subtitle / workspace / 时间 / 变更行数元数据）+ `composer.*` / `aiService.*` keys + 项目 `.cursor/{rules,mcp.json}` / `.cursorrules`。**token 权威在云端 dashboard**，本地不混算 |
+| **GitHub** | ✅ 公开贡献 | `gh api graphql` —— 默认 365 天；指定时间范围时按窗口统计 contributions / top repos，语言和 stars 作为当前仓库属性展示 |
+| **本地 Git** | ✅ 完整支持 | 项目内只读 `git log`，默认过去一年；指定时间范围时按窗口统计 commit / +- 行数 |
 
 > 用别的 AI IDE？欢迎提 Issue 告诉我数据路径，我会按同样模式接入。
 
@@ -141,6 +145,7 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md` + `outpu
 
 - 个人理念（来自 GitHub bio）
 - 一览（关键数字 + velocity 指标）
+- 阶段变化（指定月份 / 时间范围时，对比上一等长周期或窗口内前后半段）
 - 🚀 Velocity & Leverage — AI 让你快了多少、广了多少
 - 🤖 AI-Native 实践（多模型编排、高级能力、prompt caching、reasoning effort）
 - 🔧 AI 基础设施 — 你造了什么工具给 AI 用
@@ -198,8 +203,9 @@ chromium --headless --screenshot=poster.png --window-size=1080,1920 output/poste
 
 ## 🗺️ Roadmap
 
-- **v2.5（已发布）** — ✅ Kiro (AWS) / Trae (ByteDance) 适配（[#2](https://github.com/study8677/Readme.skill/issues/2)），现已支持 4 个 AI 编程工具；Weekly Recap 模式与首页 Community Gallery 持续迭代
-- **v2.6** — `--diff` 跟上次报告对比模式；里程碑徽章（BILLION CLUB / 10K STARS）
+- **v2.5.2（已发布）** — ✅ 月度 / 时间范围报告（[#3](https://github.com/study8677/Readme.skill/issues/3)）：支持 `2026-05`、日期区间、最近 N 天，所有可过滤数据按统一窗口统计。
+- **v2.5（已发布）** — ✅ Kiro (AWS) / Trae (ByteDance) / Antigravity 适配（[#2](https://github.com/study8677/Readme.skill/issues/2)），后续 v2.5.1 加入 Cursor，现已支持 6 个 AI 编程工具；Weekly Recap 模式与首页 Community Gallery 持续迭代
+- **v2.6** — `--diff` 跟上次生成的报告做快照对比；里程碑徽章（BILLION CLUB / 10K STARS）
 - **v3.0** — 让 skill 自己学：根据用户反馈调整叙事 tone
 
 想看哪个先做？[去 Issue 投票](https://github.com/study8677/Readme.skill/issues) 或者 [开 Discussion](https://github.com/study8677/Readme.skill/discussions)。

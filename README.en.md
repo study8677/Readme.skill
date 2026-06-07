@@ -10,7 +10,7 @@ Reads your real Claude Code / Codex CLI / Kiro (AWS) / Trae (ByteDance) / Gemini
 [![Forks](https://img.shields.io/github/forks/study8677/Readme.skill?style=flat-square&logo=github&color=blue)](https://github.com/study8677/Readme.skill/network/members)
 [![Issues](https://img.shields.io/github/issues/study8677/Readme.skill?style=flat-square&logo=github)](https://github.com/study8677/Readme.skill/issues)
 [![License](https://img.shields.io/github/license/study8677/Readme.skill?style=flat-square&color=green)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-v2.5.1-purple?style=flat-square)](./.claude-plugin/plugin.json)
+[![Version](https://img.shields.io/badge/version-v2.5.3-purple?style=flat-square)](./.claude-plugin/plugin.json)
 [![Featured](https://img.shields.io/badge/Featured-Ruan%20Yifeng%20Weekly%20%23395-red?style=flat-square)](https://www.ruanyifeng.com/blog/2026/05/weekly-issue-395.html)
 [![Linux Do](https://img.shields.io/badge/Community-Linux%20Do-orange?style=flat-square)](https://linux.do/)
 
@@ -36,6 +36,7 @@ Reads your real Claude Code / Codex CLI / Kiro (AWS) / Trae (ByteDance) / Gemini
 ## ✨ What you get
 
 - **A long-form report** ([sample](./examples/profile_20260515_en.md)) — 10 dimensions, narrative-driven: AI-native practice / Cache leverage / Session architecture / Token economics / Evolution curve / Project domains …
+- **Monthly / time-window reports** — scope the analysis to `2026-05`, `2026-03 to 2026-05`, or `last 30 days` to see what changed during a specific AI-coding stage.
 - **A vertical poster** ([sample SVG](./examples/poster_20260515_en.svg)) — 1080×1920, six hero numbers + AI-written verdict line + identity badges + one-line install CTA. Post it to X / LinkedIn / Mastodon as-is.
 - **100% local**: zero network calls except `gh` (your own GitHub). Zero uploads. Zero writes to `~/.claude` or `~/.codex`.
 - **Redacted by default**: project names become "Project A/B/C", private repos become `Private Repo X`, API keys / tokens / emails scrubbed via OWASP-style regex.
@@ -47,7 +48,7 @@ Reads your real Claude Code / Codex CLI / Kiro (AWS) / Trae (ByteDance) / Gemini
 | --- | --- |
 | **A developer job-hunting** | Pin a real picture of how you collaborate with AI on top of your GitHub profile — **stronger than "proficient with AI tools" on any resume** |
 | **An AI-native practitioner** | Quantify your cache leverage, multi-model orchestration, self-built skill count — things you can't easily prove in an interview |
-| **Doing year-end / weekly reviews** | One run gets you the 149-day heatmap + Evolution curve + working rhythm. Recap material, done. |
+| **Doing year-end / monthly / weekly reviews** | One run gets you a full-history or selected-month heatmap + Evolution curve + working rhythm. Recap material, done. |
 | **A creator on X / LinkedIn / Substack** | The poster ships three built-in viral pieces (verdict + badges + install CTA). Sharing loop closes itself. |
 | **A team tech lead** | Have your team each run one — discover AI best practices, not just best workers. |
 
@@ -104,9 +105,11 @@ In Claude Code or Codex, say any of:
 - "summarize my Claude / Codex history"
 - "make me an AI-native README"
 - "generate my AI profile" / "生成我的 AI 档案"
+- "build my AI usage profile for May 2026"
+- "analyze my AI coding changes from 2026-03 to 2026-05"
 - "analyze my Claude usage"
 
-The AI runs the full pipeline and writes `output/profile_<date>_en.md` for English requests, or `output/profile_<date>.md` for Chinese/default. Poster goes to `output/poster_<date>_<lang>.svg`.
+The AI runs the full pipeline and writes `output/profile_<date>_en.md` for English requests, or `output/profile_<date>.md` for Chinese/default. If you specify a month or date range, filenames include the window, e.g. `output/profile_202605_<date>_en.md` and `output/poster_202605_<date>_<lang>.svg`.
 
 ### Shareable vs private mode
 
@@ -122,9 +125,9 @@ The AI runs the full pipeline and writes `output/profile_<date>_en.md` for Engli
 | **Kiro (AWS)** | ✅ v2.5 added | `~/.kiro/sessions/cli/*.{json,jsonl}` + `~/.local/share/kiro-cli/data.sqlite3` + `~/.kiro/{agents,skills,steering,prompts,settings}` |
 | **Trae (ByteDance)** | ⚠️ v2.5 partial | `~/Library/Application Support/Trae/User/{workspaceStorage,globalStorage}/state.vscdb` (chat metadata, read-only) + workspace `.trae/{rules,skills}`. **Token usage is held by cloud API; this skill stays offline, so token numbers will be missing by default.** |
 | **Gemini Antigravity (Google)** | ✅ v2.5 added (community PR [#1](https://github.com/study8677/Readme.skill/pull/1)) | `~/.gemini/antigravity/brain/<uuid>/`: per-task `*.metadata.json` + `task.md` / `implementation_plan.md` / `walkthrough.md`. **Tokens unavailable** — task/artifact counts + text-scale estimate (non-billing) only. |
-| **Cursor (Anysphere)** | ⚠️ v2.5.1 added (partial) | `~/Library/Application Support/Cursor/User/{workspaceStorage,globalStorage}/state.vscdb` `composer.*` / `aiService.*` keys (VS Code fork, same architecture as Trae) + workspace `.cursor/{rules,mcp.json}` / `.cursorrules`. **Authoritative tokens are in cloud dashboard**, local-only estimates are reference. |
-| **GitHub** | ✅ Public contributions | `gh api graphql` — 365-day contributions, top repos, languages |
-| **Local git** | ✅ Full support | Read-only `git log` in each project, counts commits / +- lines |
+| **Cursor (Anysphere)** | ✅ v2.5.3 enhanced | `~/Library/Application Support/Cursor/User/{workspaceStorage,globalStorage}/state.vscdb` `composer.composerHeaders` metadata (title / subtitle / workspace / timestamps / changed lines) + `composer.*` / `aiService.*` keys + workspace `.cursor/{rules,mcp.json}` / `.cursorrules`. **Authoritative tokens are in cloud dashboard**, not mixed into local totals. |
+| **GitHub** | ✅ Public contributions | `gh api graphql` — default 365-day window; selected month/date-range reports use that same window for contributions / top repos; languages and stars are current repo properties |
+| **Local git** | ✅ Full support | Read-only `git log` in each project, default past year; selected month/date-range reports use that same window for commits / +- lines |
 
 > Using a different AI IDE? Open an issue with the local data paths — I'll wire it in the same pattern.
 
@@ -141,6 +144,7 @@ Two artifacts:
 
 - Personal philosophy (from GitHub bio)
 - Overview (key numbers + velocity metrics)
+- Stage change analysis (for selected months / date ranges, compared with the previous equal-length period or the first vs second half of the window)
 - 🚀 Velocity & Leverage — how much faster / wider AI made you
 - 🤖 AI-Native practice (multi-model orchestration, power features, prompt caching, reasoning effort)
 - 🔧 AI infrastructure — what tooling you built for AI
@@ -198,8 +202,9 @@ In short: **other tools measure "how much code you wrote", Readme.skill measures
 
 ## 🗺️ Roadmap
 
-- **v2.5 (shipped)** — ✅ Kiro (AWS) / Trae (ByteDance) support ([#2](https://github.com/study8677/Readme.skill/issues/2)) — 4 AI coding tools now covered; Weekly Recap mode and Community Gallery still rolling out
-- **v2.6** — `--diff` mode (compare with last report); milestone badges (BILLION CLUB / 10K STARS)
+- **v2.5.2 (shipped)** — ✅ Monthly / time-window reports ([#3](https://github.com/study8677/Readme.skill/issues/3)): supports `2026-05`, explicit date ranges, and last-N-days windows with unified filtering across all filterable sources.
+- **v2.5 (shipped)** — ✅ Kiro (AWS) / Trae (ByteDance) / Antigravity support ([#2](https://github.com/study8677/Readme.skill/issues/2)); Cursor followed in v2.5.1, so 6 AI coding tools are now covered. Weekly Recap mode and Community Gallery still rolling out
+- **v2.6** — `--diff` mode for comparing against the last generated report snapshot; milestone badges (BILLION CLUB / 10K STARS)
 - **v3.0** — Self-learning skill: tunes narrative tone from user feedback
 
 Want one of these sooner? [Vote in Issues](https://github.com/study8677/Readme.skill/issues) or [open a Discussion](https://github.com/study8677/Readme.skill/discussions).

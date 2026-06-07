@@ -4,6 +4,34 @@
 
 ## [Unreleased]
 
+## [2.5.3] - 2026-06-07
+
+> **Cursor 内容元数据增强** — 不只检测 workspace/key，也读取 composer 标题、项目、时间和变更规模信号。
+
+### Added
+- **Cursor `composer.composerHeaders` 解析**：从本地 `state.vscdb` 读取 `allComposers[].name/subtitle/createdAt/lastUpdatedAt/workspaceIdentifier/trackedGitRepos/totalLinesAdded/totalLinesRemoved`，用于关键词、项目分布、Cursor composer 数和本地协作强度。
+- **Cursor plan/topic 线索**：读取 `composer.planRegistry` keys 作为 spec/plan 主题信号，不把它们当精确 session 计数。
+- **报告模板显式加入 Cursor**：多模型编排表、Top 项目表和编排模式统计都新增 Cursor 维度。
+
+### Fixed
+- Cursor `.cursor` 配置扫描示例避免使用 zsh 特殊变量 `path`，改为 `project_path`，防止破坏 `PATH`。
+- Cursor SQLite 示例改为直接 `sqlite3 "file:...?mode=ro&immutable=1"`，避免 shell 变量含空格导致命令不可执行。
+
+## [2.5.2] - 2026-06-07
+
+> **月度 / 阶段报告** — 支持按指定月份或时间范围分析 AI 编码效果变化。
+
+### Added
+- **时间窗口模式**（解决 [#3](https://github.com/study8677/Readme.skill/issues/3)）：支持 `2026-05`、`2026-03 到 2026-05`、`最近30天` / `last 30 days` 等表达。
+- **统一窗口过滤协议**：Claude / Codex / Kiro / Trae / Antigravity / Cursor / GitHub / 本地 git 的可过滤数据都按 `[REPORT_START, REPORT_END_EXCL)` 半开区间统计。
+- **阶段变化章节**：指定窗口时，对比上一等长周期或窗口内前后半段，解释 active days、AI sessions、verified tokens、GitHub contributions、local commits、项目/工具重心的变化。
+- **窗口化输出文件名**：指定月份或日期范围时生成 `output/profile_<REPORT_SLUG>_<DATE>.md` 与 `output/poster_<REPORT_SLUG>_<DATE>_<lang>.svg`，避免覆盖同一天的全量报告。
+
+### Changed
+- Claude `modelUsage` 明确为 all-time 聚合，月度报告优先使用 `dailyModelTokens`；无法按窗口切分的字段只作为 all-time context 或降级说明。
+- GitHub 与本地 git 从硬编码 365 天扩展为默认 365 天、指定窗口时按用户窗口统计。
+- README zh/en 增加月度报告触发词、输出文件名和 Roadmap 说明；`--diff` Roadmap 文案改为“与上次生成报告对比”，避免和时间窗口过滤混淆。
+
 ## [2.5.1] - 2026-05-28
 
 > **6 引擎全员到齐** — 新增 Cursor 支持，至此已覆盖 6 个主流 AI 编程工具。
@@ -90,7 +118,9 @@
 - 10 个维度的 Markdown profile。
 - 默认匿名 + OWASP-style 正则清洗。
 
-[Unreleased]: https://github.com/study8677/Readme.skill/compare/v2.5.1...HEAD
+[Unreleased]: https://github.com/study8677/Readme.skill/compare/v2.5.3...HEAD
+[2.5.3]: https://github.com/study8677/Readme.skill/compare/v2.5.2...v2.5.3
+[2.5.2]: https://github.com/study8677/Readme.skill/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/study8677/Readme.skill/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/study8677/Readme.skill/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/study8677/Readme.skill/compare/v2.3.0...v2.4.0
