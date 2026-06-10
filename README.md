@@ -110,7 +110,7 @@ mkdir -p ~/.claude/skills/readme-skill && curl -fsSL https://raw.githubuserconte
 - "build my AI usage profile for May 2026"
 - "summarize my Claude / Codex history"
 
-AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md` + `output/poster_<日期>_<lang>.svg`。如果指定月份 / 时间范围，文件名会带上窗口后缀，例如 `output/profile_202605_<日期>.md` 和 `output/poster_202605_<日期>_<lang>.svg`。中文提问出中文版，英文提问出英文版。
+AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md` + `output/poster_<日期>_<lang>.svg`，并在结束前校验 SVG 能被浏览器正常解析。除非你明确说「不要海报 / 只要 markdown」，否则默认会生成海报。如果指定月份 / 时间范围，文件名会带上窗口后缀，例如 `output/profile_202605_<日期>.md` 和 `output/poster_202605_<日期>_<lang>.svg`。中文提问出中文版，英文提问出英文版。
 
 ### 私人版 vs 分享版
 
@@ -168,6 +168,7 @@ AI 会跑完整套流程，把结果写到 `output/profile_<日期>.md` + `outpu
 - **C. 30 秒安装 CTA**（底部 install 命令 + 仓库 URL，让看到的人能立刻生成自己的）
 - 6 个英雄数字 + Evolution 时间线 + Cache leverage 排行 + Top slash 命令
 - 自动按提问语言选中/英：[中文版](./examples/example_poster_zh.svg) · [English](./examples/example_poster_en.svg)
+- 生成后会做 SVG XML 解析校验，避免裸 `&` / `<` 等动态文本导致浏览器打开时报错
 
 #### 海报转 PNG（用于发社媒）
 
