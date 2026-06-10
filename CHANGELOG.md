@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### Changed
+- 海报从「可选附加物」明确为默认交付物：除非用户明确说不要海报，否则 `Step 8b` 必须生成 `output/poster_<...>_<lang>.svg`。
+
+### Fixed
+- 补充 SVG XML escaping 与生成后解析校验要求，防止动态文本里的裸 `&` / `<` / HTML 实体导致浏览器打开海报时报 XML 错误。
+
 ## [2.5.3] - 2026-06-07
 
 > **Cursor 内容元数据增强** — 不只检测 workspace/key，也读取 composer 标题、项目、时间和变更规模信号。

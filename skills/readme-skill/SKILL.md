@@ -20,12 +20,13 @@ license: MIT
 
 You (the AI agent invoking this skill) will read local Claude Code + Codex CLI
 + Kiro (AWS) + Trae (ByteDance) + Gemini Antigravity (Google) + Cursor data,
-compute a fixed set of dimensions, and render a Markdown profile under
-`./output/` in the user's requested language (Chinese by default; English when
-the user asks in English or explicitly requests English). The profile can cover
-the default history view or an explicit month / date range. **You do all of the
-work** — read the files with `Read`, query sqlite via `Bash`, and synthesize the
-prose yourself. Do **not** write helper scripts; the skill is the recipe.
+compute a fixed set of dimensions, and render both a Markdown profile and a
+validated SVG poster under `./output/` in the user's requested language (Chinese
+by default; English when the user asks in English or explicitly requests
+English). The profile and poster can cover the default history view or an
+explicit month / date range. **You do all of the work** — read the files with
+`Read`, query sqlite via `Bash`, synthesize the prose yourself, then write and
+validate the SVG. Do **not** write helper scripts; the skill is the recipe.
 
 > 支持的 6 个 AI 编程工具（任一缺失都自动降级跳过）：
 > 1. **Claude Code** (`~/.claude/`) — Step 2
@@ -1288,6 +1289,12 @@ overwriting a same-day default profile:
 - English: `output/profile_<REPORT_SLUG>_<YYYYMMDD>_en.md`
 - Private: `output/profile_<REPORT_SLUG>_<YYYYMMDD>_private.md`
 
+The poster is part of the default deliverable, not an optional nice-to-have:
+after writing the Markdown profile, always run Step 8b and produce the matching
+`output/poster_<...>_<lang>.svg` unless the user explicitly says "不要海报" /
+"markdown only" / "no poster". Do not finish with only the Markdown profile in
+the normal path.
+
 Use **exactly** this structure. For English output, translate headings and prose
 to English following `examples/profile_20260508_en.md`; for Chinese output, use
 the structure below. Technical terms stay in English in both versions. **讲故事优先于堆数据**；
@@ -1519,9 +1526,9 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ---
 
-## Step 8b — 海报渲染（v2.4 新增 · 可选）
+## Step 8b — 海报渲染（默认必选）
 
-如果用户说"生成海报" / "AI 海报" / "social card" / "可分享图" / "make poster"，或默认就把它当一份附加交付物，在 markdown profile 完成后再渲染 SVG 海报到 `output/poster_<YYYYMMDD>_<lang>.svg`（例如 `_zh.svg` / `_en.svg`）。如果 `WINDOW_REQUESTED=1`，文件名改为 `output/poster_<REPORT_SLUG>_<YYYYMMDD>_<lang>.svg`，海报主标题和 6 个 hero 数字必须基于该窗口而非全量历史。
+在 markdown profile 完成后，默认必须再渲染 SVG 海报到 `output/poster_<YYYYMMDD>_<lang>.svg`（例如 `_zh.svg` / `_en.svg`）。如果 `WINDOW_REQUESTED=1`，文件名改为 `output/poster_<REPORT_SLUG>_<YYYYMMDD>_<lang>.svg`，海报主标题和 6 个 hero 数字必须基于该窗口而非全量历史。只有用户明确说"不要海报" / "只要 markdown" / "no poster" 时才跳过本步骤。
 
 ### 设计原则（来自 v2.4 brief，由 Codex 审校）
 
@@ -1530,6 +1537,7 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 3. **字体用 system-ui fallback** —— 用 `font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"`，不内嵌字体
 4. **hero 数字必须有证据** —— 全部来自前面 10 维度的已算量，缺数据降级显示 `—`，**不补想象指标**
 5. **SVG 是源图，不是社媒直发** —— 在 README / 终端总结里同步给出 PNG 转换命令
+6. **生成后必须可解析** —— SVG 是 XML；只要浏览器顶部出现 XML error，就等于海报没有成功生成
 
 ### 标准布局（1080×1920 竖屏）
 
@@ -1566,9 +1574,47 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 
 ### 实现细节
 - 用纯 SVG 文本字符串（无外部资源、无嵌入字体、无 base64 图片）
+- 直接写 `.svg` 文件内容，不要包在 markdown 代码块里，不要在文件开头/结尾写解释文字；第一个非空字符必须是 `<`，最后必须正常闭合 `</svg>`
 - `<linearGradient>` 定义在 `<defs>`，`fill="url(#bg)"` 引用
 - 卡片用 `<rect rx="20">` 圆角；分隔线用 `<line stroke-opacity="0.1">`
 - letter-spacing 在英文标签上加 2-6px 提升设计感
+- 所有写入 `<text>`、属性值、`<title>` 的动态文本都必须先做 XML escaping：
+  - `&` → `&amp;`（必须先替换）
+  - `<` → `&lt;`
+  - `>` → `&gt;`
+  - `"` → `&quot;`（属性值里必须）
+  - `'` → `&apos;`（属性值里必须）
+- Standalone SVG 只安全使用上面 5 个 XML 预定义实体；不要写 `&nbsp;`、`&copy;` 等 HTML 实体
+- 常见会炸浏览器的文本必须转义，例如 `War & Peace` 要写成 `War &amp; Peace`，`A < B` 要写成 `A &lt; B`
+- 动态数据不要用于 `id`、gradient id、filter id 或 `url(#...)` 引用；这些标识符保持静态 ASCII，避免空格、中文或特殊字符破坏引用
+- 长文案先截断 / 换行，再 escape；不要靠浏览器自动换行，也不要生成未闭合的 `<text>` / `<tspan>`
+
+### 生成后强制验证
+
+写完 SVG 后必须做 XML 解析校验。校验失败时，立即修复或重写 SVG 并重新校验；
+不得在校验失败时告诉用户 "Poster generated"。
+
+```bash
+POSTER_PATH="output/poster_<YYYYMMDD>_<lang>.svg"  # 按实际文件名替换
+python3 - "$POSTER_PATH" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+
+path = sys.argv[1]
+tree = ET.parse(path)
+root = tree.getroot()
+if root.tag not in ("svg", "{http://www.w3.org/2000/svg}svg"):
+    raise SystemExit(f"not an SVG root: {root.tag}")
+view_box = root.attrib.get("viewBox", "")
+if view_box != "0 0 1080 1920":
+    raise SystemExit(f"unexpected viewBox: {view_box!r}")
+print(f"SVG XML OK: {path}")
+PY
+
+if command -v rsvg-convert >/dev/null 2>&1; then
+  rsvg-convert -h 1920 "$POSTER_PATH" >/tmp/readme-skill-poster-smoke.png
+fi
+```
 
 ### 语言决定（中文 / 英文双版本）
 
@@ -1618,8 +1664,8 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 **样例**（基于 12.9B token through 的 demo）：
 - 中：「<span_days> 天，我和 AI 写下 <X> 亿字 / 等于把《红楼梦》写了 <N> 万遍」
   - 实填：`117 天，我和 AI 写下 120 亿字 / 等于把《红楼梦》写了 1 万遍`
-- 英：「<span_days> days · <total_through> tokens with AI / That's War & Peace × <N> times」
-  - 实填：`117 days · 12.9B tokens with AI / That's War & Peace × 25,000 times`
+- 英 SVG text：「<span_days> days · <total_through> tokens with AI / That's War &amp; Peace × <N> times」
+  - 实填到 SVG 时：`117 days · 12.9B tokens with AI / That's War &amp; Peace × 25,000 times`
 
 **为什么 Tone A 优先**：12.9B 这种数字对圈外人是抽象的；红楼梦/War & Peace 任何受过教育的人都立刻有量感。这是从「圈内炫耀」变「破圈震撼」的关键。
 
@@ -1682,25 +1728,34 @@ xhigh **<n>**（**<%>**）· high **<n>** · medium **<n>** · low **<n>**
 - 英文版: `examples/example_poster_en.svg`
 
 两份对照来看一下"哪些翻译、哪些保留"的具体边界，以及徽章 + 金句 + CTA 在 SVG 里的实现方式。
+优先复用对应样板的 SVG 骨架，只替换已计算且已 escape 的数字和文案；不要自由重写
+XML 结构，除非样板结构无法表达当前数据。
 
 ---
 
 ## Step 9 — 输出与交接
 
-把 Markdown 写入对应语言的 `output/profile_<YYYYMMDD>.md` 或 `output/profile_<YYYYMMDD>_en.md`，
-指定窗口时写入 `output/profile_<REPORT_SLUG>_<YYYYMMDD>.md` 或
-`output/profile_<REPORT_SLUG>_<YYYYMMDD>_en.md`，
+先确定并复用同一组实际输出路径：
+- `profile_path`: 对应语言的 `output/profile_<YYYYMMDD>.md` 或 `output/profile_<YYYYMMDD>_en.md`
+- `poster_path`: 对应语言的 `output/poster_<YYYYMMDD>_<lang>.svg`
+- 指定窗口时，分别使用 `output/profile_<REPORT_SLUG>_<YYYYMMDD>...` 与
+  `output/poster_<REPORT_SLUG>_<YYYYMMDD>_<lang>.svg`
+
+把 Markdown 写入 `profile_path`，把 SVG 写入 `poster_path` 并完成 Step 8b 校验，
 然后给用户**一句话**总结：
+下面的 `<profile_path>` / `<poster_path>` 是占位符，输出时必须替换为真实文件路径，
+不要原样输出尖括号占位符。
 
 ```
-✅ Profile generated: output/profile_<YYYYMMDD>.md  (或 output/profile_<YYYYMMDD>_en.md)
-🎨 Poster:    output/poster_<YYYYMMDD>_<lang>.svg  (如果生成了)
+✅ Profile generated: <profile_path>
+🎨 Poster:    <poster_path>
+验证：SVG XML OK
 关键数字：<claude_sessions> Claude sessions / <codex_threads> Codex threads / <antigravity_tasks> Antigravity tasks / <tokens> tokens / <github_commits> commits
 分析范围：<REPORT_LABEL>（指定窗口时显示）
 预览：head -40 <profile_path>
-预览海报：open output/poster_<YYYYMMDD>_<lang>.svg
-转 PNG：rsvg-convert -h 1920 output/poster_<YYYYMMDD>_<lang>.svg > poster.png
-       (或 chromium --headless --screenshot=poster.png poster.svg)
+预览海报：open <poster_path>
+转 PNG：rsvg-convert -h 1920 <poster_path> > poster.png
+       (或 chromium --headless --screenshot=poster.png --window-size=1080,1920 <poster_path>)
 ```
 
 如果用户要求"私人版"，再生成一份 `output/profile_<YYYYMMDD>_private.md`
